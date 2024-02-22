@@ -6,6 +6,7 @@ use pest::iterators::Pairs;
 /// You shouldn't have to use this type directly: instead, use the top level
 /// `parse` function to parse an ontology document.
 #[derive(Debug, Parser)]
+#[grammar = "sparql.pest"]
 #[grammar = "bcp47.pest"]
 #[grammar = "rfc3987.pest"]
 #[grammar = "owl.pest"]
@@ -46,8 +47,9 @@ mod tests {
     }
 
     #[test]
-    fn namespace() {
-        assert_parse!(Rule::Namespace, r#"Namespace: <http://ex.com/owl/families#>"#);
+    fn prefix() {
+        assert_parse!(Rule::PrefixDeclaration, r#"Prefix: : <http://ex.com/owl/families#>"#);
+        assert_parse!(Rule::PrefixDeclaration, r#"Prefix: g: <http://ex.com/owl2/families#>"#);
     }
 
     #[test]
@@ -88,7 +90,7 @@ mod tests {
 
     #[test]
     fn annotation_property_uri() {
-        assert_parse!(Rule::AnnotationPropertyURI, r#"creator"#);
+        assert_parse!(Rule::AnnotationPropertyIRI, r#"creator"#);
     }
 
     #[test]
@@ -110,6 +112,6 @@ mod tests {
 
     #[test]
     fn misc() {
-        assert_parse!(Rule::Misc, r#"DisjointClasses: g:Rock, g:Scissor, g:Paper"#);
+        assert_parse!(Rule::Misc, r#"DisjointClasses: Annotations: creator Jonh g:Rock, g:Scissor, g:Paper"#);
     }
 }

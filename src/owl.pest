@@ -99,13 +99,16 @@ MINUS    = _{ "-" }
 
 // 2.0 Meta-productions
 
+LiteralList    = { Literal ~ (COMMA ~ Literal)* }
+IndividualList = { Individual ~ (COMMA ~ Individual)* }
+
 AnnotationAnnotatedList                   = { Annotations? ~ Annotation                   ~ (COMMA ~ Annotations? ~ Annotation)* }
 DescriptionAnnotatedList                  = { Annotations? ~ Description                  ~ (COMMA ~ Annotations? ~ Description)* }
 ObjectPropertyCharacteristicAnnotatedList = { Annotations? ~ ObjectPropertyCharacteristic ~ (COMMA ~ Annotations? ~ ObjectPropertyCharacteristic)* }
 ObjectPropertyExpressionAnnotatedList     = { Annotations? ~ ObjectPropertyExpression     ~ (COMMA ~ Annotations? ~ ObjectPropertyExpression)* }
 DataPropertyExpressionAnnotatedList       = { Annotations? ~ DataPropertyExpression       ~ (COMMA ~ Annotations? ~ DataPropertyExpression)* }
-URIAnnotatedList                          = { Annotations? ~ URI                          ~ (COMMA ~ Annotations? ~ URI)* }
-AnnotationPropertyURIAnnotatedList        = { Annotations? ~ AnnotationPropertyURI        ~ (COMMA ~ Annotations? ~ AnnotationPropertyURI)* }
+IRIAnnotatedList                          = { Annotations? ~ IRI                          ~ (COMMA ~ Annotations? ~ IRI)* }
+AnnotationPropertyIRIAnnotatedList        = { Annotations? ~ AnnotationPropertyIRI        ~ (COMMA ~ Annotations? ~ AnnotationPropertyIRI)* }
 FactAnnotatedList                         = { Annotations? ~ Fact                         ~ (COMMA ~ Annotations? ~ Fact)* }
 IndividualAnnotatedList                   = { Annotations? ~ Individual                   ~ (COMMA ~ Annotations? ~ Individual)* }
 
@@ -115,15 +118,13 @@ DataPropertyExpression2List   = { DataPropertyExpression   ~ (COMMA ~ DataProper
 Individual2List               = { Individual               ~ (COMMA ~ Individual)+ }
 
 
-// 2.1 URIs, Integers, Literals and Entities
+// 2.1 IRIs, Integers, Literals and Entities
 
 FullIRI = ${ LCHEVRON ~ RFC3987_Iri ~ RCHEVRON }
-NCName = ${ XML_NCName }
-// Namespace = ${ FullIRI }
-Prefix = ${ NCName }
-Reference = ${ RFC3987_IriRelativeRef }
-Curie = ${ (Prefix? ~ COLON)? ~ Reference }
-URI = ${ FullIRI | Curie }
+PrefixName = ${ SPARQL_PnameNs }
+AbbreviatedIRI = ${ SPARQL_PnameLn }
+SimpleIRI = ${ SPARQL_PnLocal }
+IRI = { FullIRI | AbbreviatedIRI | SimpleIRI }
 
 NonNegativeInteger = @{ Zero | PositiveInteger }
 PositiveInteger    = @{ NonZero ~ Digit* }
@@ -132,65 +133,64 @@ NonZero            = @{ ASCII_NONZERO_DIGIT }
 Digit              = @{ ASCII_DIGIT }
 Zero               = @{ "0" }
 
-ClassURI              = { URI }
-Datatype              = { DatatypeURI | "integer" | "decimal" | "float" | "string" }
-DatatypeURI           = { URI }
-ObjectPropertyURI     = { URI }
-DataPropertyURI       = { URI }
-AnnotationPropertyURI = { URI }
-Individual            = { IndividualURI | NodeID }
-IndividualURI         = { URI }
-NodeID                = { TODO }
+ClassIRI              = { IRI }
+Datatype              = { DatatypeIRI | "integer" | "decimal" | "float" | "string" }
+DatatypeIRI           = { IRI }
+ObjectPropertyIRI     = { IRI }
+DataPropertyIRI       = { IRI }
+AnnotationPropertyIRI = { IRI }
+Individual            = { IndividualIRI | NodeID }
+IndividualIRI         = { IRI }
+NodeID                = { SPARQL_BlankNodeLabel }
 
-Literal                     = { TypedLiteral | AbbreviatedXSDStringLiteral | AbbreviatedRDFTextLiteral | IntegerLiteral | DecimalLiteral | FloatingPointLiteral }
-TypedLiteral                = { LexicalValue ~ CARET{2} ~ Datatype }
-AbbreviatedXSDStringLiteral = { QuotedString }
-AbbreviatedRDFTextLiteral   = { QuotedString ~ "@" ~ LanguageTag }
-LanguageTag                 = { TODO }
-
-LexicalValue         = ${ QuotedString }
-QuotedString         = ${ DQUOTE ~ ( !DQUOTE ~ ("\\\\" | "\\\"" | ANY) )* ~ DQUOTE }
-FloatingPointLiteral = ${ (PLUS | MINUS)? ~ ((Digits ~ (POINT ~ Digits)? ~ Exponent?) | (POINT ~ Digits ~ Exponent?)) ~ ( "f" | "F" ) }
-Exponent             = ${ ("e" | "E") ~ (PLUS | MINUS)? ~ Digits }
-DecimalLiteral       = ${ (PLUS | MINUS)? ~ Digits ~ POINT ~ Digits }
-IntegerLiteral       = ${ (PLUS | MINUS)? ~ Digits }
+Literal                   = { TypedLiteral | StringLiteralWithLanguage | StringLiteralNoLanguage | IntegerLiteral | DecimalLiteral | FloatingPointLiteral }
+TypedLiteral              = { LexicalValue ~ CARET{2} ~ Datatype }
+StringLiteralNoLanguage   = { QuotedString }
+StringLiteralWithLanguage = { QuotedString ~ "@" ~ LanguageTag }
+LanguageTag               = ${ "@" ~ BCP47_LangTag }
+LexicalValue              = ${ QuotedString }
+QuotedString              = ${ DQUOTE ~ ( !DQUOTE ~ ("\\\\" | "\\\"" | ANY) )* ~ DQUOTE }
+FloatingPointLiteral      = ${ (PLUS | MINUS)? ~ ((Digits ~ (POINT ~ Digits)? ~ Exponent?) | (POINT ~ Digits ~ Exponent?)) ~ ( "f" | "F" ) }
+Exponent                  = ${ ("e" | "E") ~ (PLUS | MINUS)? ~ Digits }
+DecimalLiteral            = ${ (PLUS | MINUS)? ~ Digits ~ POINT ~ Digits }
+IntegerLiteral            = ${ (PLUS | MINUS)? ~ Digits }
 
 Entity = {
-        (LIT_DATATYPE ~ LBRACKET ~ DatatypeURI ~ RBRACKET)
-    |   (LIT_CLASS ~ LBRACKET ~ ClassURI ~ RBRACKET)
-    |   (LIT_OBJECT_PROPERTY ~ LBRACKET ~ ObjectPropertyURI ~ RBRACKET)
-    |   (LIT_DATA_PROPERTY ~ LBRACKET ~ DataPropertyURI ~ RBRACKET)
-    |   (LIT_ANNOTATION_PROPERTY ~ LBRACKET ~ AnnotationPropertyURI ~ RBRACKET)
-    |   (LIT_NAMED_INDIVIDUAL ~ LBRACKET ~ IndividualURI ~ RBRACKET)
+        (LIT_DATATYPE ~ LBRACKET ~ DatatypeIRI ~ RBRACKET)
+    |   (LIT_CLASS ~ LBRACKET ~ ClassIRI ~ RBRACKET)
+    |   (LIT_OBJECT_PROPERTY ~ LBRACKET ~ ObjectPropertyIRI ~ RBRACKET)
+    |   (LIT_DATA_PROPERTY ~ LBRACKET ~ DataPropertyIRI ~ RBRACKET)
+    |   (LIT_ANNOTATION_PROPERTY ~ LBRACKET ~ AnnotationPropertyIRI ~ RBRACKET)
+    |   (LIT_NAMED_INDIVIDUAL ~ LBRACKET ~ IndividualIRI ~ RBRACKET)
 }
 
 // 2.2 Ontologies and Annotations
 
 Annotations             = { "Annotations:" ~ AnnotationAnnotatedList }
-Annotation              = { AnnotationPropertyURI ~ AnnotationTarget }
-AnnotationTarget        = { NodeID | URI | Literal }
+Annotation              = { AnnotationPropertyIRI ~ AnnotationTarget }
+AnnotationTarget        = { NodeID | IRI | Literal }
 
-OntologyDocument = { Namespace* ~ Ontology }
-Namespace = { "Namespace:" ~ Prefix? ~ FullIRI }
-Ontology = ${ "Ontology:" ~ ( OntologyURI ~ VersionURI?)? ~ Import* ~ Annotations* ~ Frame* }
-OntologyURI = { URI }
-VersionURI = { URI }
-Import = { "Import:" ~ URI }
-Frame = ${ ClassFrame | ObjectPropertyFrame | DataPropertyFrame | AnnotationPropertyFrame | IndividualFrame | Misc }
+OntologyDocument  = { PrefixDeclaration* ~ Ontology }
+PrefixDeclaration = { "Prefix:" ~ PrefixName ~ FullIRI }
+Ontology = ${ "Ontology:" ~ ( OntologyIRI ~ VersionIRI?)? ~ Import* ~ Annotations* ~ Frame* }
+OntologyIRI = { IRI }
+VersionIRI = { IRI }
+Import = { "Import:" ~ IRI }
+Frame = ${ DatatypeFrame | ClassFrame | ObjectPropertyFrame | DataPropertyFrame | AnnotationPropertyFrame | IndividualFrame | Misc }
 
 
 // 2.3 Property and Datatype Expressions
 
-ObjectPropertyExpression = { ObjectPropertyURI | InverseObjectProperty }
-InverseObjectProperty    = { "inverse" ~ ObjectPropertyURI }
-DataPropertyExpression   = { DataPropertyURI }
+ObjectPropertyExpression = { ObjectPropertyIRI | InverseObjectProperty }
+InverseObjectProperty    = { "inverse" ~ ObjectPropertyIRI }
+DataPropertyExpression   = { DataPropertyIRI }
 
 DataRange = { DataConjunction ~ ("or" ~ DataConjunction)* }
 DataConjunction = { DataPrimary ~ ("and" ~ DataPrimary)*  }
 DataPrimary = { "not"? ~ DataAtomic }
 DataAtomic = { 
         Datatype 
-    |   ( LCURLY ~ Literal ~ (COMMA ~ Literal)* ~ RCURLY) 
+    |   ( LCURLY ~ LiteralList ~ RCURLY) 
     |   DataTypeRestriction
     |   ( LBRACKET ~ DataRange ~ RBRACKET )
 }
@@ -203,7 +203,7 @@ RestrictionValue = { Literal }
 
 Description = { Conjuction ~ ("or" ~ Conjuction)* }
 Conjuction = { 
-        (ClassURI ~ "that" ~ "not"? ~ Restriction ~ ( "and" ~ "not"? ~ Restriction )*)
+        (ClassIRI ~ "that" ~ "not"? ~ Restriction ~ ( "and" ~ "not"? ~ Restriction )*)
     |   (Primary ~ ("and" ~ Primary)*)
 }
 Primary = { "not"? ~ (Restriction | Atomic) }
@@ -223,15 +223,22 @@ Restriction = {
     |   (DataPropertyExpression ~ "exactly" ~ NonNegativeInteger ~ DataPrimary? )
 }
 Atomic = {
-        ClassURI 
-    |   ( LCURLY ~ Individual ~ (COMMA ~ Individual)* ~ RCURLY )
+        ClassIRI 
+    |   ( LCURLY ~ IndividualList ~ RCURLY )
     |   ( LBRACKET ~ Description ~ RBRACKET )
 }
 
 
 // 2.5 Frames and Miscellaneous
 
-ClassFrame  = { ("Class:" ~ ClassURI) ~ ClassClause* }
+DatatypeFrame = { 
+    ("Datatype:" ~ Datatype) ~ Datatype 
+    ~ Annotations* 
+    ~ ( "EquivalentTo:" ~ Annotations ~ DataRange )?
+    ~ Annotations*
+  }
+
+ClassFrame  = { ("Class:" ~ ClassIRI) ~ ClassClause* }
 ClassClause = {
         ("Annotations:" ~ AnnotationAnnotatedList)
     |   ("SubClassOf:" ~ DescriptionAnnotatedList)
@@ -240,7 +247,7 @@ ClassClause = {
     |   ("DisjointUnionOf:" ~ Annotations ~ Description2List)
 }
 
-ObjectPropertyFrame = { ("ObjectProperty:" ~ ObjectPropertyURI) ~ ObjectPropertyClause* }
+ObjectPropertyFrame = { ("ObjectProperty:" ~ ObjectPropertyIRI) ~ ObjectPropertyClause* }
 ObjectPropertyClause = {
         ("Annotations:" ~ AnnotationAnnotatedList)
     |   ("Domain:" ~ DescriptionAnnotatedList)
@@ -262,7 +269,7 @@ ObjectPropertyCharacteristic = {
     |   "Transitive"
 }
 
-DataPropertyFrame = { ("DataProperty:" ~ DataPropertyURI) ~ DataPropertyClause* }
+DataPropertyFrame = { ("DataProperty:" ~ DataPropertyIRI) ~ DataPropertyClause* }
 DataPropertyClause = {
         ("Annotations:" ~ AnnotationAnnotatedList)
     |   ("Domain:" ~ DescriptionAnnotatedList)
@@ -273,12 +280,12 @@ DataPropertyClause = {
     |   ("DisjointWith:" ~ DataPropertyExpressionAnnotatedList)
 }
 
-AnnotationPropertyFrame = { ("AnnotationProperty:" ~ AnnotationPropertyURI) ~ AnnotationPropertyClause* }
+AnnotationPropertyFrame = { ("AnnotationProperty:" ~ AnnotationPropertyIRI) ~ AnnotationPropertyClause* }
 AnnotationPropertyClause = {
         ("Annotations:" ~ AnnotationAnnotatedList)
-    |   ("Domain:" ~ URIAnnotatedList)
-    |   ("Range:" ~ URIAnnotatedList)
-    |   ("SubPropertyOf:" ~ AnnotationPropertyURIAnnotatedList)
+    |   ("Domain:" ~ IRIAnnotatedList)
+    |   ("Range:" ~ IRIAnnotatedList)
+    |   ("SubPropertyOf:" ~ AnnotationPropertyIRIAnnotatedList)
 }
 
 IndividualFrame = { ("Individual:" ~ Individual) ~ IndividualClause* }
@@ -291,8 +298,8 @@ IndividualClause = {
 }
 
 Fact = { "not"? ~ (ObjectPropertyFact | DataPropertyFact) }
-ObjectPropertyFact = { ObjectPropertyURI ~ Individual }
-DataPropertyFact = { DataPropertyURI ~ Literal }
+ObjectPropertyFact = { ObjectPropertyIRI ~ Individual }
+DataPropertyFact = { DataPropertyIRI ~ Literal }
 
 Misc = {
         ("EquivalentClasses:" ~ Annotations ~ Description2List)
