@@ -181,7 +181,7 @@ Frame = ${ DatatypeFrame | ClassFrame | ObjectPropertyFrame | DataPropertyFrame 
 
 // 2.3 Property and Datatype Expressions
 
-ObjectPropertyExpression = { ObjectPropertyIRI | InverseObjectProperty }
+ObjectPropertyExpression = { InverseObjectProperty | ObjectPropertyIRI }
 InverseObjectProperty    = { "inverse" ~ ObjectPropertyIRI }
 DataPropertyExpression   = { DataPropertyIRI }
 
