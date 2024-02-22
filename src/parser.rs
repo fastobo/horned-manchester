@@ -88,6 +88,28 @@ mod tests {
     }
 
     #[test]
+    fn data_range() {
+        assert_parse!(Rule::DataRange, r#"integer[< 0]"#);
+    }
+
+    #[test]
+    fn datatype_frame() {
+        assert_parse!(
+            Rule::DatatypeFrame,
+            r#"
+            Datatype: NegInt
+                Annotations: createdBy Martin, creationYear 2024
+                EquivalentTo: integer[< 0]
+            "#
+        );
+    }
+
+    #[test]
+    fn datatype_restriction() {
+        assert_parse!(Rule::DatatypeRestriction, r#"integer[< 0]"#);
+    }
+
+    #[test]
     fn import() {
         assert_parse!(Rule::Import, r#"Import: <http://ex.com/owl2/families.owl>"#);
     }

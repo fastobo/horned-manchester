@@ -189,12 +189,12 @@ DataRange = { DataConjunction ~ ("or" ~ DataConjunction)* }
 DataConjunction = { DataPrimary ~ ("and" ~ DataPrimary)*  }
 DataPrimary = { "not"? ~ DataAtomic }
 DataAtomic = { 
-        Datatype 
-    |   ( LCURLY ~ LiteralList ~ RCURLY) 
-    |   DataTypeRestriction
+        ( LCURLY ~ LiteralList ~ RCURLY) 
     |   ( LBRACKET ~ DataRange ~ RBRACKET )
+    |   DatatypeRestriction
+    |   Datatype 
 }
-DataTypeRestriction = { Datatype ~ LSQUARE ~ Facet ~ RestrictionValue ~ (COMMA ~ Facet ~ RestrictionValue)* ~ RSQUARE }
+DatatypeRestriction = { Datatype ~ LSQUARE ~ Facet ~ RestrictionValue ~ (COMMA ~ Facet ~ RestrictionValue)* ~ RSQUARE }
 Facet = { "length" | "minLength" | "maxLength" | "pattern" | "langPattern" | "<=" | "<" | ">=" | ">" }
 RestrictionValue = { Literal }
 
@@ -232,9 +232,9 @@ Atomic = {
 // 2.5 Frames and Miscellaneous
 
 DatatypeFrame = { 
-    ("Datatype:" ~ Datatype) ~ Datatype 
+    "Datatype:" ~ Datatype
     ~ Annotations* 
-    ~ ( "EquivalentTo:" ~ Annotations ~ DataRange )?
+    ~ ( "EquivalentTo:" ~ Annotations? ~ DataRange )?
     ~ Annotations*
   }
 
