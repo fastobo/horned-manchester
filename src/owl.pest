@@ -139,7 +139,7 @@ DatatypeIRI           = { IRI }
 ObjectPropertyIRI     = { IRI }
 DataPropertyIRI       = { IRI }
 AnnotationPropertyIRI = { IRI }
-Individual            = { IndividualIRI | NodeID }
+Individual            = { NodeID | IndividualIRI }
 IndividualIRI         = { IRI }
 NodeID                = { SPARQL_BlankNodeLabel }
 

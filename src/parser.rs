@@ -47,28 +47,6 @@ mod tests {
     }
 
     #[test]
-    fn prefix() {
-        assert_parse!(Rule::PrefixDeclaration, r#"Prefix: : <http://ex.com/owl/families#>"#);
-        assert_parse!(Rule::PrefixDeclaration, r#"Prefix: g: <http://ex.com/owl2/families#>"#);
-    }
-
-    #[test]
-    fn import() {
-        assert_parse!(Rule::Import, r#"Import: <http://ex.com/owl2/families.owl>"#);
-    }
-
-    #[test]
-    fn literal() {
-        assert_parse!(Rule::Literal, r#"2008"#);
-    }
-
-    #[test]
-    fn integer_literal() {
-        assert_parse!(Rule::IntegerLiteral, r#"2008"#);
-    }
-
-
-    #[test]
     fn annotation() {
         assert_parse!(Rule::Annotation, r#"creator John"#);
         assert_parse!(Rule::Annotation, r#"creationYear 2008"#);
@@ -96,8 +74,12 @@ mod tests {
     #[test]
     fn annotations() {
         assert_parse!(
-            Rule::Annotations, 
+            Rule::Annotations,
             r#"Annotations: creator John, creationYear 2008, mainClass Person"#
+        );
+        assert_parse!(
+            Rule::Annotations,
+            r#"Annotations: creator John , Annotations: rdfs:comment "Creation Year" creationYear 2008 , mainClass Person"#
         );
         assert_parse!(
             Rule::Annotations,
@@ -106,12 +88,107 @@ mod tests {
     }
 
     #[test]
-    fn quoted_string() {
-        assert_parse!(Rule::QuotedString, r#""gene_ontology""#);
+    fn import() {
+        assert_parse!(Rule::Import, r#"Import: <http://ex.com/owl2/families.owl>"#);
+    }
+
+    #[test]
+    fn individual_clause() {
+        assert_parse!(Rule::IndividualClause, r#"Types: Person , hasFirstName value "John" or hasFirstName value "Jack"^^xsd:string"#);
+        assert_parse!(Rule::IndividualClause, r#"Facts: hasWife Mary, not hasChild Susan, hasAge 33, hasChild _:child1"#);
+    }
+
+    #[test]
+    fn individual() {
+        assert_parse!(Rule::Individual, r#"Susan"#);
+        assert_parse!(Rule::Individual, r#"_:child1"#);
+    }
+
+    #[test]
+    fn individual_frame() {
+        assert_parse!(
+            Rule::IndividualFrame,
+            r#"
+            Individual: John
+                Types: Person , hasFirstName value "John" or hasFirstName value "Jack"^^xsd:string
+                Facts: hasWife Mary, not hasChild Susan, hasAge 33, hasChild _:child1
+                SameAs: Jack
+                DifferentFrom: Susan
+            "#
+        );
+    }
+
+    #[test]
+    fn integer_literal() {
+        assert_parse!(Rule::IntegerLiteral, r#"2008"#);
+    }
+
+    #[test]
+    fn literal() {
+        assert_parse!(Rule::Literal, r#"2008"#);
     }
 
     #[test]
     fn misc() {
         assert_parse!(Rule::Misc, r#"DisjointClasses: Annotations: creator Jonh g:Rock, g:Scissor, g:Paper"#);
     }
+
+    #[test]
+    fn prefix() {
+        assert_parse!(Rule::PrefixDeclaration, r#"Prefix: : <http://ex.com/owl/families#>"#);
+        assert_parse!(Rule::PrefixDeclaration, r#"Prefix: g: <http://ex.com/owl2/families#>"#);
+    }
+
+    #[test]
+    fn object_property_clause() {
+        assert_parse!(Rule::ObjectPropertyClause, "Range: Person, Woman");
+        assert_parse!(Rule::ObjectPropertyClause, "SubPropertyOf: hasSpouse, loves");
+        assert_parse!(Rule::ObjectPropertyClause, "EquivalentTo: isMarriedTo");
+        assert_parse!(Rule::ObjectPropertyClause, "DisjointWith: hates");
+        assert_parse!(Rule::ObjectPropertyClause, "InverseOf: hasSpouse, inverse hasSpouse");
+    }
+
+    #[test]
+    fn object_property_expression() {
+        assert_parse!(Rule::ObjectPropertyExpression, "hasSpouse");
+        assert_parse!(Rule::ObjectPropertyExpression, "inverse hasSpouse");
+    }
+
+    #[test]
+    fn object_property_fact() {
+        assert_parse!(Rule::ObjectPropertyFact, r#"hasChild _:child1"#);
+    }
+
+    #[test]
+    fn object_property_frame() {
+        assert_parse!(
+            Rule::ObjectPropertyFrame,
+            r#"
+            ObjectProperty: hasWife
+                Characteristics: Functional, InverseFunctional, Reflexive, Irreflexive, Asymmetric, Transitive
+                Domain: Annotations: rdfs:comment "General domain",
+                                    creator John
+                        Person,
+                        Annotations: rdfs:comment "More specific domain"
+                        Man
+                Range: Person, Woman
+                SubPropertyOf: hasSpouse, loves
+                EquivalentTo: isMarriedTo
+                DisjointWith: hates
+                InverseOf: hasSpouse, inverse hasSpouse
+            "#
+        );
+    }
+
+    #[test]
+    fn object_property_iri() {
+        assert_parse!(Rule::ObjectPropertyIRI, r#"hasChild"#);
+    }
+
+    #[test]
+    fn quoted_string() {
+        assert_parse!(Rule::QuotedString, r#""gene_ontology""#);
+    }
+
+
 }
