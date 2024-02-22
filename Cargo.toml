@@ -1,0 +1,30 @@
+[package]
+name = "horned-manchester"
+version = "0.4.0"
+authors = ["Martin Larralde <martin.larralde@embl.de>"]
+edition = "2021"
+license = "MIT"
+description = "An OWL2 Manchester Syntax parser and serializer for horned-owl"
+repository = "https://github.com/fastobo/horned-manchester"
+readme = "README.md"
+keywords = ["owl", "syntax", "parser", "manchester", "owl2"]
+categories = ["science", "parser-implementations"]
+exclude = ["tests/data/*"]
+
+[dependencies]
+pest = "2.5.1"
+pest_derive = "2.5.1"
+horned-owl = "0.14.0"
+curie = "0.1.1"
+enum_meta = "0.6.0"
+thiserror = "1.0.0"
+[dependencies.memmap]
+version = "0.7.0"
+optional = true
+
+[features]
+default = []
+
+[dev-dependencies]
+matches = "0.1.8"
+ureq = "2.3.1"
