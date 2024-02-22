@@ -1,0 +1,314 @@
+TODO = _{ "TODO" }
+WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
+COMMENT = _{ "#" ~ (!"\n" ~ !"\r" ~ ANY)* }
+
+
+LIT_PREFIX = _{ "Prefix" }
+LIT_ONTOLOGY = _{ "Ontology" }
+LIT_IMPORT = _{ "Import" }
+LIT_DECLARATION = _{ "Declaration" }
+LIT_CLASS = _{ "Class" }
+LIT_DATATYPE = _{ "Datatype" }
+LIT_OBJECT_PROPERTY = _{ "ObjectProperty" }
+LIT_DATA_PROPERTY = _{ "DataProperty" }
+LIT_ANNOTATION_PROPERTY = _{ "AnnotationProperty" }
+LIT_NAMED_INDIVIDUAL = _{ "NamedIndividual" }
+LIT_ANNOTATION = _{ "Annotation" }
+LIT_ANNOTATION_ASSERTION = _{ "AnnotationAssertion" }
+LIT_SUBANNOTATION_PROPERTY_OF = _{"SubAnnotationPropertyOf"}
+LIT_ANNOTATION_PROPERTY_DOMAIN = _{"AnnotationPropertyDomain"}
+LIT_ANNOTATION_PROPERTY_RANGE = _{"AnnotationPropertyRange"}
+LIT_OBJECT_ONE_OF = _{"ObjectOneOf"}
+LIT_OBJECT_ALL_VALUES_FROM = _{"ObjectAllValuesFrom"}
+LIT_OBJECT_SOME_VALUES_FROM = _{"ObjectSomeValuesFrom"}
+LIT_OBJECT_INVERSE_OF = _{ "ObjectInverseOf" }
+LIT_DATA_INTERSECTION_OF = _{ "DataIntersectionOf" }
+LIT_DATA_UNION_OF = _{ "DataUnionOf" }
+LIT_DATA_COMPLEMENT_OF = _{ "DataComplementOf" }
+LIT_DATA_ONE_OF = _{ "DataOneOf" }
+LIT_DATATYPE_RESTRICTION = _{ "DatatypeRestriction" }
+LIT_OBJECT_INTERSECTION_OF = _{ "ObjectIntersectionOf" }
+LIT_OBJECT_UNION_OF = _{ "ObjectUnionOf" }
+LIT_OBJECT_COMPLEMENT_OF = _{ "ObjectComplementOf" }
+LIT_OBJECT_MIN_CARDINALITY = _{"ObjectMinCardinality"}
+LIT_OBJECT_MAX_CARDINALITY = _{"ObjectMaxCardinality"}
+LIT_OBJECT_HAS_SELF = _{"ObjectHasSelf"}
+LIT_OBJECT_HAS_VALUE = _{"ObjectHasValue"}
+LIT_OBJECT_EXACT_CARDINALITY = _{"ObjectExactCardinality"}
+LIT_CLASS_ASSERTION = _{"ClassAssertion"}
+LIT_DATA_SOME_VALUES_FROM = _{"DataSomeValuesFrom"}
+LIT_DATA_ALL_VALUES_FROM = _{"DataAllValuesFrom"}
+LIT_DATA_HAS_VALUE = _{"DataHasValue"}
+LIT_DATA_MIN_CARDINALITY = _{"DataMinCardinality"}
+LIT_DATA_MAX_CARDINALITY = _{"DataMaxCardinality"}
+LIT_DATA_EXACT_CARDINALITY = _{"DataExactCardinality"}
+LIT_SUB_CLASS_OF = _{"SubClassOf"}
+LIT_EQUIVALENT_CLASSES = _{"EquivalentClasses"}
+LIT_DISJOINT_CLASSES = _{"DisjointClasses"}
+LIT_DISJOINT_UNION = _{"DisjointUnion"}
+LIT_SUB_OBJECT_PROPERTY_OF = _{"SubObjectPropertyOf"}
+LIT_OBJECT_PROPERTY_CHAIN = _{"ObjectPropertyChain"}
+LIT_EQUIVALENT_OBJECT_PROPERTIES = _{"EquivalentObjectProperties"}
+LIT_DISJOINT_OBJECT_PROPERTIES = _{"DisjointObjectProperties"}
+LIT_OBJECT_PROPERTY_DOMAIN = _{"ObjectPropertyDomain"}
+LIT_OBJECT_PROPERTY_RANGE = _{"ObjectPropertyRange"}
+LIT_INVERSE_OBJECT_PROPERTIES = _{"InverseObjectProperties"}
+LIT_FUNCTIONAL_OBJECT_PROPERTY = _{"FunctionalObjectProperty"}
+LIT_INVERSE_FUNCTIONAL_OBJECT_PROPERTY = _{"InverseFunctionalObjectProperty"}
+LIT_REFLEXIVE_OBJECT_PROPERTY = _{"ReflexiveObjectProperty"}
+LIT_IRREFLEXIVE_OBJECT_PROPERTY = _{"IrreflexiveObjectProperty"}
+LIT_SYMMETRIC_OBJECT_PROPERTY = _{"SymmetricObjectProperty"}
+LIT_ASYMMETRIC_OBJECT_PROPERTY = _{"AsymmetricObjectProperty"}
+LIT_TRANSITIVE_OBJECT_PROPERTY = _{"TransitiveObjectProperty"}
+LIT_SUB_DATA_PROPERTY_OF = _{"SubDataPropertyOf"}
+LIT_EQUIVALENT_DATA_PROPERTIES = _{"EquivalentDataProperties"}
+LIT_DISJOINT_DATA_PROPERTIES = _{"DisjointDataProperties"}
+LIT_DATA_PROPERTY_DOMAIN = {"DataPropertyDomain"}
+LIT_DATA_PROPERTY_RANGE = _{"DataPropertyRange"}
+LIT_FUNCTIONAL_DATA_PROPERTY = {"FunctionalDataProperty"}
+LIT_DATATYPE_DEFINITION = _{"DatatypeDefinition"}
+LIT_HAS_KEY = _{"HasKey"}
+LIT_DIFFERENT_INDIVIDUALS = _{"DifferentIndividuals"}
+LIT_SAME_INDIVIDUAL = _{"SameIndividual"}
+LIT_OBJECT_PROPERTY_ASSERTION = _{"ObjectPropertyAssertion"}
+LIT_NEGATIVE_OBJECT_PROPERTY_ASSERTION = _{"NegativeObjectPropertyAssertion"}
+LIT_DATA_PROPERTY_ASSERTION = _{"DataPropertyAssertion"}
+LIT_NEGATIVE_DATA_PROPERTY_ASSERTION = _{"NegativeDataPropertyAssertion"}
+
+
+
+LBRACKET = _{ "(" }
+RBRACKET = _{ ")" }
+LSQUARE  = _{ "[" }
+RSQUARE  = _{ "]" }
+LCURLY   = _{ "{" }
+RCURLY   = _{ "}" }
+LCHEVRON = _{ "<" }
+RCHEVRON = _{ ">" }
+POINT    = _{ "." }
+COMMA    = _{ "," }
+COLON    = _{ ":" }
+CARET    = _{ "^" }
+DQUOTE   = _{ "\"" }
+SQUOTE   = _{ "'" }
+PLUS     = _{ "+" }
+MINUS    = _{ "-" }
+
+
+// 2 The Grammar
+
+// 2.0 Meta-productions
+
+AnnotationAnnotatedList                   = { Annotations? ~ Annotation                   ~ (COMMA ~ Annotations? ~ Annotation)* }
+DescriptionAnnotatedList                  = { Annotations? ~ Description                  ~ (COMMA ~ Annotations? ~ Description)* }
+ObjectPropertyCharacteristicAnnotatedList = { Annotations? ~ ObjectPropertyCharacteristic ~ (COMMA ~ Annotations? ~ ObjectPropertyCharacteristic)* }
+ObjectPropertyExpressionAnnotatedList     = { Annotations? ~ ObjectPropertyExpression     ~ (COMMA ~ Annotations? ~ ObjectPropertyExpression)* }
+DataPropertyExpressionAnnotatedList       = { Annotations? ~ DataPropertyExpression       ~ (COMMA ~ Annotations? ~ DataPropertyExpression)* }
+URIAnnotatedList                          = { Annotations? ~ URI                          ~ (COMMA ~ Annotations? ~ URI)* }
+AnnotationPropertyURIAnnotatedList        = { Annotations? ~ AnnotationPropertyURI        ~ (COMMA ~ Annotations? ~ AnnotationPropertyURI)* }
+FactAnnotatedList                         = { Annotations? ~ Fact                         ~ (COMMA ~ Annotations? ~ Fact)* }
+IndividualAnnotatedList                   = { Annotations? ~ Individual                   ~ (COMMA ~ Annotations? ~ Individual)* }
+
+Description2List              = { Description              ~ (COMMA ~ Description)+ }
+ObjectPropertyExpression2List = { ObjectPropertyExpression ~ (COMMA ~ ObjectPropertyExpression)+ }
+DataPropertyExpression2List   = { DataPropertyExpression   ~ (COMMA ~ DataPropertyExpression)+ }
+Individual2List               = { Individual               ~ (COMMA ~ Individual)+ }
+
+
+// 2.1 URIs, Integers, Literals and Entities
+
+FullIRI = ${ LCHEVRON ~ RFC3987_Iri ~ RCHEVRON }
+NCName = ${ XML_NCName }
+// Namespace = ${ FullIRI }
+Prefix = ${ NCName }
+Reference = ${ RFC3987_IriRelativeRef }
+Curie = ${ (Prefix? ~ COLON)? ~ Reference }
+URI = ${ FullIRI | Curie }
+
+NonNegativeInteger = @{ Zero | PositiveInteger }
+PositiveInteger    = @{ NonZero ~ Digit* }
+Digits             = @{ Digit+ }
+NonZero            = @{ ASCII_NONZERO_DIGIT }
+Digit              = @{ ASCII_DIGIT }
+Zero               = @{ "0" }
+
+ClassURI              = { URI }
+Datatype              = { DatatypeURI | "integer" | "decimal" | "float" | "string" }
+DatatypeURI           = { URI }
+ObjectPropertyURI     = { URI }
+DataPropertyURI       = { URI }
+AnnotationPropertyURI = { URI }
+Individual            = { IndividualURI | NodeID }
+IndividualURI         = { URI }
+NodeID                = { TODO }
+
+Literal                     = { TypedLiteral | AbbreviatedXSDStringLiteral | AbbreviatedRDFTextLiteral | IntegerLiteral | DecimalLiteral | FloatingPointLiteral }
+TypedLiteral                = { LexicalValue ~ CARET{2} ~ Datatype }
+AbbreviatedXSDStringLiteral = { QuotedString }
+AbbreviatedRDFTextLiteral   = { QuotedString ~ "@" ~ LanguageTag }
+LanguageTag                 = { TODO }
+
+LexicalValue         = ${ QuotedString }
+QuotedString         = ${ DQUOTE ~ ( !DQUOTE ~ ("\\\\" | "\\\"" | ANY) )* ~ DQUOTE }
+FloatingPointLiteral = ${ (PLUS | MINUS)? ~ ((Digits ~ (POINT ~ Digits)? ~ Exponent?) | (POINT ~ Digits ~ Exponent?)) ~ ( "f" | "F" ) }
+Exponent             = ${ ("e" | "E") ~ (PLUS | MINUS)? ~ Digits }
+DecimalLiteral       = ${ (PLUS | MINUS)? ~ Digits ~ POINT ~ Digits }
+IntegerLiteral       = ${ (PLUS | MINUS)? ~ Digits }
+
+Entity = {
+        (LIT_DATATYPE ~ LBRACKET ~ DatatypeURI ~ RBRACKET)
+    |   (LIT_CLASS ~ LBRACKET ~ ClassURI ~ RBRACKET)
+    |   (LIT_OBJECT_PROPERTY ~ LBRACKET ~ ObjectPropertyURI ~ RBRACKET)
+    |   (LIT_DATA_PROPERTY ~ LBRACKET ~ DataPropertyURI ~ RBRACKET)
+    |   (LIT_ANNOTATION_PROPERTY ~ LBRACKET ~ AnnotationPropertyURI ~ RBRACKET)
+    |   (LIT_NAMED_INDIVIDUAL ~ LBRACKET ~ IndividualURI ~ RBRACKET)
+}
+
+// 2.2 Ontologies and Annotations
+
+Annotations             = { "Annotations:" ~ AnnotationAnnotatedList }
+Annotation              = { AnnotationPropertyURI ~ AnnotationTarget }
+AnnotationTarget        = { NodeID | URI | Literal }
+
+OntologyDocument = { Namespace* ~ Ontology }
+Namespace = { "Namespace:" ~ Prefix? ~ FullIRI }
+Ontology = ${ "Ontology:" ~ ( OntologyURI ~ VersionURI?)? ~ Import* ~ Annotations* ~ Frame* }
+OntologyURI = { URI }
+VersionURI = { URI }
+Import = { "Import:" ~ URI }
+Frame = ${ ClassFrame | ObjectPropertyFrame | DataPropertyFrame | AnnotationPropertyFrame | IndividualFrame | Misc }
+
+
+// 2.3 Property and Datatype Expressions
+
+ObjectPropertyExpression = { ObjectPropertyURI | InverseObjectProperty }
+InverseObjectProperty    = { "inverse" ~ ObjectPropertyURI }
+DataPropertyExpression   = { DataPropertyURI }
+
+DataRange = { DataConjunction ~ ("or" ~ DataConjunction)* }
+DataConjunction = { DataPrimary ~ ("and" ~ DataPrimary)*  }
+DataPrimary = { "not"? ~ DataAtomic }
+DataAtomic = { 
+        Datatype 
+    |   ( LCURLY ~ Literal ~ (COMMA ~ Literal)* ~ RCURLY) 
+    |   DataTypeRestriction
+    |   ( LBRACKET ~ DataRange ~ RBRACKET )
+}
+DataTypeRestriction = { Datatype ~ LSQUARE ~ Facet ~ RestrictionValue ~ (COMMA ~ Facet ~ RestrictionValue)* ~ RSQUARE }
+Facet = { "length" | "minLength" | "maxLength" | "pattern" | "langPattern" | "<=" | "<" | ">=" | ">" }
+RestrictionValue = { Literal }
+
+
+// 2.4 Descriptions
+
+Description = { Conjuction ~ ("or" ~ Conjuction)* }
+Conjuction = { 
+        (ClassURI ~ "that" ~ "not"? ~ Restriction ~ ( "and" ~ "not"? ~ Restriction )*)
+    |   (Primary ~ ("and" ~ Primary)*)
+}
+Primary = { "not"? ~ (Restriction | Atomic) }
+Restriction = {
+        (ObjectPropertyExpression ~ "some" ~ Primary)
+    |   (ObjectPropertyExpression ~ "only" ~ Primary)
+    |   (ObjectPropertyExpression ~ "value" ~ Individual)
+    |   (ObjectPropertyExpression ~ "Self")
+    |   (ObjectPropertyExpression ~ "min" ~ NonNegativeInteger ~ Primary? )
+    |   (ObjectPropertyExpression ~ "max" ~ NonNegativeInteger ~ Primary? )
+    |   (ObjectPropertyExpression ~ "exactly" ~ NonNegativeInteger ~ Primary? )
+    |   (DataPropertyExpression ~ "some" ~ DataPrimary )
+    |   (DataPropertyExpression ~ "only" ~ DataPrimary )
+    |   (DataPropertyExpression ~ "value" ~ Literal )
+    |   (DataPropertyExpression ~ "min" ~ NonNegativeInteger ~ DataPrimary? )
+    |   (DataPropertyExpression ~ "max" ~ NonNegativeInteger ~ DataPrimary? )
+    |   (DataPropertyExpression ~ "exactly" ~ NonNegativeInteger ~ DataPrimary? )
+}
+Atomic = {
+        ClassURI 
+    |   ( LCURLY ~ Individual ~ (COMMA ~ Individual)* ~ RCURLY )
+    |   ( LBRACKET ~ Description ~ RBRACKET )
+}
+
+
+// 2.5 Frames and Miscellaneous
+
+ClassFrame  = { ("Class:" ~ ClassURI) ~ ClassClause* }
+ClassClause = {
+        ("Annotations:" ~ AnnotationAnnotatedList)
+    |   ("SubClassOf:" ~ DescriptionAnnotatedList)
+    |   ("EquivalentTo:" ~ DescriptionAnnotatedList)
+    |   ("DisjointWith:" ~ DescriptionAnnotatedList)
+    |   ("DisjointUnionOf:" ~ Annotations ~ Description2List)
+}
+
+ObjectPropertyFrame = { ("ObjectProperty:" ~ ObjectPropertyURI) ~ ObjectPropertyClause* }
+ObjectPropertyClause = {
+        ("Annotations:" ~ AnnotationAnnotatedList)
+    |   ("Domain:" ~ DescriptionAnnotatedList)
+    |   ("Range:" ~ DescriptionAnnotatedList)
+    |   ("Characteristics:" ~ ObjectPropertyCharacteristicAnnotatedList)
+    |   ("SubPropertyOf:" ~ ObjectPropertyExpressionAnnotatedList)
+    |   ("EquivalentTo:" ~ ObjectPropertyExpressionAnnotatedList)
+    |   ("DisjointWith:" ~ ObjectPropertyExpressionAnnotatedList)
+    |   ("InverseOf:" ~ ObjectPropertyExpressionAnnotatedList)
+    |   ("SubPropertyChain:" ~ Annotations ~ ObjectPropertyExpression ~ ("o" ~ ObjectPropertyExpression)+)
+}
+ObjectPropertyCharacteristic = {
+        "Functional"
+    |   "InverseFunctional"
+    |   "Reflexive"
+    |   "Irreflexive"
+    |   "Symmetric"
+    |   "Asymmetric"
+    |   "Transitive"
+}
+
+DataPropertyFrame = { ("DataProperty:" ~ DataPropertyURI) ~ DataPropertyClause* }
+DataPropertyClause = {
+        ("Annotations:" ~ AnnotationAnnotatedList)
+    |   ("Domain:" ~ DescriptionAnnotatedList)
+    |   ("Range:" ~ DescriptionAnnotatedList)
+    |   ("Characteristics:" ~ Annotations ~ "Functional")
+    |   ("SubPropertyOf:" ~ DataPropertyExpressionAnnotatedList)
+    |   ("EquivalentTo:" ~ DataPropertyExpressionAnnotatedList)
+    |   ("DisjointWith:" ~ DataPropertyExpressionAnnotatedList)
+}
+
+AnnotationPropertyFrame = { ("AnnotationProperty:" ~ AnnotationPropertyURI) ~ AnnotationPropertyClause* }
+AnnotationPropertyClause = {
+        ("Annotations:" ~ AnnotationAnnotatedList)
+    |   ("Domain:" ~ URIAnnotatedList)
+    |   ("Range:" ~ URIAnnotatedList)
+    |   ("SubPropertyOf:" ~ AnnotationPropertyURIAnnotatedList)
+}
+
+IndividualFrame = { ("Individual:" ~ Individual) ~ IndividualClause* }
+IndividualClause = {
+        ("Annotations:" ~ AnnotationAnnotatedList)
+    |   ("Types:" ~ DescriptionAnnotatedList)
+    |   ("Facts:" ~ FactAnnotatedList)
+    |   ("SameAs:" ~ IndividualAnnotatedList)
+    |   ("DifferentFrom:" ~ IndividualAnnotatedList)
+}
+
+Fact = { "not"? ~ (ObjectPropertyFact | DataPropertyFact) }
+ObjectPropertyFact = { ObjectPropertyURI ~ Individual }
+DataPropertyFact = { DataPropertyURI ~ Literal }
+
+Misc = {
+        ("EquivalentClasses:" ~ Annotations ~ Description2List)
+    |   ("DisjointClasses:" ~ Annotations ~ Description2List)
+    |   ("EquivalentProperties:" ~ Annotations ~ ObjectPropertyExpression2List)
+    |   ("DisjointProperties:" ~ Annotations ~ ObjectPropertyExpression2List)
+    |   ("EquivalentProperties:" ~ Annotations ~ DataPropertyExpression2List)
+    |   ("DisjointProperties:" ~ Annotations ~ DataPropertyExpression2List)
+    |   ("SameIndividual:" ~ Annotations ~ Individual2List)
+    |   ("DifferentIndividuals:" ~ Annotations ~ Individual2List)
+    |   ("HasKey:" ~ Description ~ Annotations ~ (ObjectPropertyExpression | DataPropertyExpression)+ )
+}
+
+
+// Annex I: NCName from XML Namespaces
+
+XML_NCName          = @{ XML_NCNameStartChar ~ XML_NCNameChar* }
+XML_NCNameStartChar = @{ ASCII_ALPHA_UPPER | "_" | ASCII_ALPHA_LOWER | '\xC0' .. '\xD6' | '\xD8' .. '\xF6' } // | '\xF8' .. '\x2ff' | '\x370' .. '\x37D' | '\x37F' .. '\x1FFF' | '\x200c' .. '\x200D' | '\x2070' .. '\x218F' | '\x2C00' .. '\x2FEF' | '\x3001' .. '\xD7FF' }
+XML_NCNameChar      = @{ XML_NCNameStartChar | "-" | "." | ASCII_DIGIT | "\xB7" } // | '\x0300' .. '\x036F' | '\x203F' .. '\x2040' }
