@@ -95,6 +95,69 @@ PLUS     = _{ "+" }
 MINUS    = _{ "-" }
 
 
+// FIXME: Check that all keyword terminals are covered.
+KEYWORD = { 
+        "and" 
+    |   "max" 
+    |   "min" 
+    |   "not" 
+    |   "only" 
+    |   "or" 
+    |   "Self"
+    |   "some" 
+    |   "that" 
+    |   "value" 
+    |   "inverse"
+
+    |   "length" 
+    |   "minLength" 
+    |   "maxLength" 
+    |   "pattern" 
+    |   "langPattern"
+
+    |   "SubClassOf"
+    |   "Annotations"
+    |   "EquivalentTo"
+    |   "Class"
+    |   "Datatype"
+    |   "SubClassOf"
+    |   "EquivalentTo"
+    |   "DisjointWith"
+    |   "DisjointUnionOf"
+    |   "HasKey"
+    |   "ObjectProperty"
+    |   "Domain"
+    |   "Range"
+    |   "Characteristics"
+    |   "SubPropertyOf"
+    |   "EquivalentTo"
+    |   "DisjointWith"
+    |   "InverseOf"
+    |   "SubPropertyChain"
+
+    |   "Functional"
+    |   "InverseFunctional"
+    |   "Reflexive"
+    |   "Irreflexive"
+    |   "Symmetric"
+    |   "Asymmetric"
+    |   "Transitive"
+
+    |   "DataProperty"
+    |   "AnnotationProperty"
+    |   "Individual"
+    
+    |   "EquivalentClasses"
+    |   "DisjointClasses"
+    |   "EquivalentProperties"
+    |   "DisjointProperties"
+    |   "EquivalentProperties"
+    |   "DisjointProperties"
+    |   "SameIndividual"
+    |   "DifferentIndividuals"
+}
+
+
 // 2 The Grammar
 
 // 2.0 Meta-productions
@@ -121,9 +184,9 @@ Individual2List               = { Individual               ~ (COMMA ~ Individual
 // 2.1 IRIs, Integers, Literals and Entities
 
 FullIRI = ${ LCHEVRON ~ RFC3987_Iri ~ RCHEVRON }
-PrefixName = ${ SPARQL_PnameNs }
+PrefixName = ${ !KEYWORD ~ SPARQL_PnameNs }
 AbbreviatedIRI = ${ SPARQL_PnameLn }
-SimpleIRI = ${ SPARQL_PnLocal }
+SimpleIRI = ${ !KEYWORD ~ SPARQL_PnLocal }
 IRI = { FullIRI | AbbreviatedIRI | SimpleIRI }
 
 NonNegativeInteger = @{ Zero | PositiveInteger }
@@ -208,19 +271,19 @@ Conjuction = {
 }
 Primary = { "not"? ~ (Restriction | Atomic) }
 Restriction = {
-        (ObjectPropertyExpression ~ "some" ~ Primary)
+        (DataPropertyExpression ~ "some" ~ DataPrimary )
+    |   (DataPropertyExpression ~ "only" ~ DataPrimary )
+    |   (DataPropertyExpression ~ "value" ~ Literal )
+    |   (DataPropertyExpression ~ "min" ~ NonNegativeInteger ~ DataPrimary? )
+    |   (DataPropertyExpression ~ "max" ~ NonNegativeInteger ~ DataPrimary? )
+    |   (DataPropertyExpression ~ "exactly" ~ NonNegativeInteger ~ DataPrimary? )
+    |   (ObjectPropertyExpression ~ "some" ~ Primary)
     |   (ObjectPropertyExpression ~ "only" ~ Primary)
     |   (ObjectPropertyExpression ~ "value" ~ Individual)
     |   (ObjectPropertyExpression ~ "Self")
     |   (ObjectPropertyExpression ~ "min" ~ NonNegativeInteger ~ Primary? )
     |   (ObjectPropertyExpression ~ "max" ~ NonNegativeInteger ~ Primary? )
     |   (ObjectPropertyExpression ~ "exactly" ~ NonNegativeInteger ~ Primary? )
-    |   (DataPropertyExpression ~ "some" ~ DataPrimary )
-    |   (DataPropertyExpression ~ "only" ~ DataPrimary )
-    |   (DataPropertyExpression ~ "value" ~ Literal )
-    |   (DataPropertyExpression ~ "min" ~ NonNegativeInteger ~ DataPrimary? )
-    |   (DataPropertyExpression ~ "max" ~ NonNegativeInteger ~ DataPrimary? )
-    |   (DataPropertyExpression ~ "exactly" ~ NonNegativeInteger ~ DataPrimary? )
 }
 Atomic = {
         ClassIRI 
@@ -245,6 +308,7 @@ ClassClause = {
     |   ("EquivalentTo:" ~ DescriptionAnnotatedList)
     |   ("DisjointWith:" ~ DescriptionAnnotatedList)
     |   ("DisjointUnionOf:" ~ Annotations ~ Description2List)
+    |   ("HasKey:" ~ Annotations ~ (ObjectPropertyExpression | DataPropertyExpression)+)
 }
 
 ObjectPropertyFrame = { ("ObjectProperty:" ~ ObjectPropertyIRI) ~ ObjectPropertyClause* }
