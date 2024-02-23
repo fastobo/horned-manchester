@@ -174,7 +174,7 @@ AnnotationTarget        = { NodeID | IRI | Literal }
 
 OntologyDocument  = { PrefixDeclaration* ~ Ontology }
 PrefixDeclaration = { "Prefix:" ~ PrefixName ~ FullIRI }
-Ontology = ${ "Ontology:" ~ ( OntologyIRI ~ VersionIRI?)? ~ Import* ~ Annotations* ~ Frame* }
+Ontology = { "Ontology:" ~ ( OntologyIRI ~ VersionIRI?)? ~ Import* ~ Annotations* ~ Frame* }
 OntologyIRI = { IRI }
 VersionIRI = { IRI }
 Import = { "Import:" ~ IRI }

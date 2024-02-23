@@ -295,6 +295,19 @@ mod tests {
     }
 
     #[test]
+    fn ontology() {
+        assert_parse!(
+            Rule::Ontology,
+            r#"
+            Ontology: <http://purl.obolibrary.org/obo/ms.owl>
+                <http://purl.obolibrary.org/obo/ms/4.1.29/ms.owl>
+                Import: <http://ontologies.berkeleybop.org/pato.obo>
+                Import: <http://ontologies.berkeleybop.org/uo.obo>
+            "#
+        );
+    }
+
+    #[test]
     fn prefix() {
         assert_parse!(Rule::PrefixDeclaration, r#"Prefix: : <http://ex.com/owl/families#>"#);
         assert_parse!(Rule::PrefixDeclaration, r#"Prefix: g: <http://ex.com/owl2/families#>"#);
