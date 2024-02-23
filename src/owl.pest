@@ -14,67 +14,6 @@ LIT_DATA_PROPERTY = _{ "DataProperty" }
 LIT_ANNOTATION_PROPERTY = _{ "AnnotationProperty" }
 LIT_NAMED_INDIVIDUAL = _{ "NamedIndividual" }
 LIT_ANNOTATION = _{ "Annotation" }
-LIT_ANNOTATION_ASSERTION = _{ "AnnotationAssertion" }
-LIT_SUBANNOTATION_PROPERTY_OF = _{"SubAnnotationPropertyOf"}
-LIT_ANNOTATION_PROPERTY_DOMAIN = _{"AnnotationPropertyDomain"}
-LIT_ANNOTATION_PROPERTY_RANGE = _{"AnnotationPropertyRange"}
-LIT_OBJECT_ONE_OF = _{"ObjectOneOf"}
-LIT_OBJECT_ALL_VALUES_FROM = _{"ObjectAllValuesFrom"}
-LIT_OBJECT_SOME_VALUES_FROM = _{"ObjectSomeValuesFrom"}
-LIT_OBJECT_INVERSE_OF = _{ "ObjectInverseOf" }
-LIT_DATA_INTERSECTION_OF = _{ "DataIntersectionOf" }
-LIT_DATA_UNION_OF = _{ "DataUnionOf" }
-LIT_DATA_COMPLEMENT_OF = _{ "DataComplementOf" }
-LIT_DATA_ONE_OF = _{ "DataOneOf" }
-LIT_DATATYPE_RESTRICTION = _{ "DatatypeRestriction" }
-LIT_OBJECT_INTERSECTION_OF = _{ "ObjectIntersectionOf" }
-LIT_OBJECT_UNION_OF = _{ "ObjectUnionOf" }
-LIT_OBJECT_COMPLEMENT_OF = _{ "ObjectComplementOf" }
-LIT_OBJECT_MIN_CARDINALITY = _{"ObjectMinCardinality"}
-LIT_OBJECT_MAX_CARDINALITY = _{"ObjectMaxCardinality"}
-LIT_OBJECT_HAS_SELF = _{"ObjectHasSelf"}
-LIT_OBJECT_HAS_VALUE = _{"ObjectHasValue"}
-LIT_OBJECT_EXACT_CARDINALITY = _{"ObjectExactCardinality"}
-LIT_CLASS_ASSERTION = _{"ClassAssertion"}
-LIT_DATA_SOME_VALUES_FROM = _{"DataSomeValuesFrom"}
-LIT_DATA_ALL_VALUES_FROM = _{"DataAllValuesFrom"}
-LIT_DATA_HAS_VALUE = _{"DataHasValue"}
-LIT_DATA_MIN_CARDINALITY = _{"DataMinCardinality"}
-LIT_DATA_MAX_CARDINALITY = _{"DataMaxCardinality"}
-LIT_DATA_EXACT_CARDINALITY = _{"DataExactCardinality"}
-LIT_SUB_CLASS_OF = _{"SubClassOf"}
-LIT_EQUIVALENT_CLASSES = _{"EquivalentClasses"}
-LIT_DISJOINT_CLASSES = _{"DisjointClasses"}
-LIT_DISJOINT_UNION = _{"DisjointUnion"}
-LIT_SUB_OBJECT_PROPERTY_OF = _{"SubObjectPropertyOf"}
-LIT_OBJECT_PROPERTY_CHAIN = _{"ObjectPropertyChain"}
-LIT_EQUIVALENT_OBJECT_PROPERTIES = _{"EquivalentObjectProperties"}
-LIT_DISJOINT_OBJECT_PROPERTIES = _{"DisjointObjectProperties"}
-LIT_OBJECT_PROPERTY_DOMAIN = _{"ObjectPropertyDomain"}
-LIT_OBJECT_PROPERTY_RANGE = _{"ObjectPropertyRange"}
-LIT_INVERSE_OBJECT_PROPERTIES = _{"InverseObjectProperties"}
-LIT_FUNCTIONAL_OBJECT_PROPERTY = _{"FunctionalObjectProperty"}
-LIT_INVERSE_FUNCTIONAL_OBJECT_PROPERTY = _{"InverseFunctionalObjectProperty"}
-LIT_REFLEXIVE_OBJECT_PROPERTY = _{"ReflexiveObjectProperty"}
-LIT_IRREFLEXIVE_OBJECT_PROPERTY = _{"IrreflexiveObjectProperty"}
-LIT_SYMMETRIC_OBJECT_PROPERTY = _{"SymmetricObjectProperty"}
-LIT_ASYMMETRIC_OBJECT_PROPERTY = _{"AsymmetricObjectProperty"}
-LIT_TRANSITIVE_OBJECT_PROPERTY = _{"TransitiveObjectProperty"}
-LIT_SUB_DATA_PROPERTY_OF = _{"SubDataPropertyOf"}
-LIT_EQUIVALENT_DATA_PROPERTIES = _{"EquivalentDataProperties"}
-LIT_DISJOINT_DATA_PROPERTIES = _{"DisjointDataProperties"}
-LIT_DATA_PROPERTY_DOMAIN = {"DataPropertyDomain"}
-LIT_DATA_PROPERTY_RANGE = _{"DataPropertyRange"}
-LIT_FUNCTIONAL_DATA_PROPERTY = {"FunctionalDataProperty"}
-LIT_DATATYPE_DEFINITION = _{"DatatypeDefinition"}
-LIT_HAS_KEY = _{"HasKey"}
-LIT_DIFFERENT_INDIVIDUALS = _{"DifferentIndividuals"}
-LIT_SAME_INDIVIDUAL = _{"SameIndividual"}
-LIT_OBJECT_PROPERTY_ASSERTION = _{"ObjectPropertyAssertion"}
-LIT_NEGATIVE_OBJECT_PROPERTY_ASSERTION = _{"NegativeObjectPropertyAssertion"}
-LIT_DATA_PROPERTY_ASSERTION = _{"DataPropertyAssertion"}
-LIT_NEGATIVE_DATA_PROPERTY_ASSERTION = _{"NegativeDataPropertyAssertion"}
-
 
 
 LBRACKET = _{ "(" }
@@ -376,10 +315,3 @@ Misc = {
     |   ("DifferentIndividuals:" ~ Annotations ~ Individual2List)
     |   ("HasKey:" ~ Description ~ Annotations ~ (ObjectPropertyExpression | DataPropertyExpression)+ )
 }
-
-
-// Annex I: NCName from XML Namespaces
-
-XML_NCName          = @{ XML_NCNameStartChar ~ XML_NCNameChar* }
-XML_NCNameStartChar = @{ ASCII_ALPHA_UPPER | "_" | ASCII_ALPHA_LOWER | '\xC0' .. '\xD6' | '\xD8' .. '\xF6' } // | '\xF8' .. '\x2ff' | '\x370' .. '\x37D' | '\x37F' .. '\x1FFF' | '\x200c' .. '\x200D' | '\x2070' .. '\x218F' | '\x2C00' .. '\x2FEF' | '\x3001' .. '\xD7FF' }
-XML_NCNameChar      = @{ XML_NCNameStartChar | "-" | "." | ASCII_DIGIT | "\xB7" } // | '\x0300' .. '\x036F' | '\x203F' .. '\x2040' }
