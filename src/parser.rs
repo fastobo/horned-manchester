@@ -77,6 +77,15 @@ mod tests {
                 SubPropertyOf: initialCreator
             "#
         );
+        assert_parse!(
+            Rule::AnnotationPropertyFrame,
+            r#"
+            AnnotationProperty: <http://purl.obolibrary.org/obo/IAO_0000115>
+
+                Annotations: 
+                    rdfs:label "definition"
+            "#
+        );
     }
 
     #[test]
@@ -254,6 +263,11 @@ mod tests {
         assert_parse!(Rule::ObjectPropertyClause, "EquivalentTo: isMarriedTo");
         assert_parse!(Rule::ObjectPropertyClause, "DisjointWith: hates");
         assert_parse!(Rule::ObjectPropertyClause, "InverseOf: hasSpouse, inverse hasSpouse");
+        assert_parse!(Rule::ObjectPropertyClause, "Characteristics: Transitive");
+        assert_parse!(Rule::ObjectPropertyClause, "SubPropertyChain: <http://purl.obolibrary.org/obo/BFO_0000050> o <http://purl.obolibrary.org/obo/BFO_0000062>");
+        assert_parse!(Rule::ObjectPropertyClause, "Domain: <http://purl.obolibrary.org/obo/BFO_0000003>");
+        assert_parse!(Rule::ObjectPropertyClause, "Range: <http://purl.obolibrary.org/obo/BFO_0000003>");
+        assert_parse!(Rule::ObjectPropertyClause, "InverseOf: <http://purl.obolibrary.org/obo/BFO_0000063>");
     }
 
     #[test]
@@ -287,6 +301,42 @@ mod tests {
                 InverseOf: hasSpouse, inverse hasSpouse
             "#
         );
+        assert_parse!(
+            Rule::ObjectPropertyFrame,
+            r#"
+            ObjectProperty: <http://purl.obolibrary.org/obo/BFO_0000062>
+
+                Annotations: 
+                    <http://purl.obolibrary.org/obo/IAO_0000111> "preceded by",
+                    <http://purl.obolibrary.org/obo/IAO_0000115> "x is preceded by y if and only if the time point at which y ends is before or equivalent to the time point at which x starts. Formally: x preceded by y iff ω(y) <= α(x), where α is a function that maps a process to a start point, and ω is a function that maps a process to an end point.",
+                    <http://purl.obolibrary.org/obo/IAO_0000116> "An example is: translation preceded_by transcription; aging preceded_by development (not however death preceded_by aging). Where derives_from links classes of continuants, preceded_by links classes of processes. Clearly, however, these two relations are not independent of each other. Thus if cells of type C1 derive_from cells of type C, then any cell division involving an instance of C1 in a given lineage is preceded_by cellular processes involving an instance of C.    The assertion P preceded_by P1 tells us something about Ps in general: that is, it tells us something about what happened earlier, given what we know about what happened later. Thus it does not provide information pointing in the opposite direction, concerning instances of P1 in general; that is, that each is such as to be succeeded by some instance of P. Note that an assertion to the effect that P preceded_by P1 is rather weak; it tells us little about the relations between the underlying instances in virtue of which the preceded_by relation obtains. Typically we will be interested in stronger relations, for example in the relation immediately_preceded_by, or in relations which combine preceded_by with a condition to the effect that the corresponding instances of P and P1 share participants, or that their participants are connected by relations of derivation, or (as a first step along the road to a treatment of causality) that the one process in some way affects (for example, initiates or regulates) the other.",
+                    <http://purl.obolibrary.org/obo/IAO_0000118> "is preceded by",
+                    <http://purl.obolibrary.org/obo/IAO_0000118> "preceded_by",
+                    <http://purl.org/dc/elements/1.1/source> "http://www.obofoundry.org/ro/#OBO_REL:preceded_by",
+                    <http://www.geneontology.org/formats/oboInOwl#hasOBONamespace> "Planarian_Anatomy",
+                    <http://www.geneontology.org/formats/oboInOwl#id> "BFO:0000062",
+                    <http://www.geneontology.org/formats/oboInOwl#inSubset> <http://purl.obolibrary.org/obo/plana#ro-eco>,
+                    rdfs:label "preceded by"
+                
+                SubPropertyOf: 
+                    <http://purl.obolibrary.org/obo/RO_0002086>
+                
+                SubPropertyChain: 
+                    <http://purl.obolibrary.org/obo/BFO_0000050> o <http://purl.obolibrary.org/obo/BFO_0000062>
+                
+                Characteristics: 
+                    Transitive
+                
+                Domain: 
+                    <http://purl.obolibrary.org/obo/BFO_0000003>
+                
+                Range: 
+                    <http://purl.obolibrary.org/obo/BFO_0000003>
+                
+                InverseOf: 
+                    <http://purl.obolibrary.org/obo/BFO_0000063>
+            "#
+        );
     }
 
     #[test]
@@ -303,6 +353,21 @@ mod tests {
                 <http://purl.obolibrary.org/obo/ms/4.1.29/ms.owl>
                 Import: <http://ontologies.berkeleybop.org/pato.obo>
                 Import: <http://ontologies.berkeleybop.org/uo.obo>
+            "#
+        );
+        assert_parse!(
+            Rule::Ontology,
+            r#"
+            Ontology: <http://purl.obolibrary.org/obo/ms.owl>
+                <http://purl.obolibrary.org/obo/ms/4.1.29/ms.owl>
+                Import: <http://ontologies.berkeleybop.org/pato.obo>
+                Import: <http://ontologies.berkeleybop.org/uo.obo>
+
+            AnnotationProperty: <http://www.geneontology.org/formats/oboInOwl#auto-generated-by>
+
+            AnnotationProperty: <http://www.geneontology.org/formats/oboInOwl#date>
+            
+            AnnotationProperty: <http://www.geneontology.org/formats/oboInOwl#default-namespace>
             "#
         );
     }

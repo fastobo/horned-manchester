@@ -178,7 +178,7 @@ Ontology = { "Ontology:" ~ ( OntologyIRI ~ VersionIRI?)? ~ Import* ~ Annotations
 OntologyIRI = { IRI }
 VersionIRI = { IRI }
 Import = { "Import:" ~ IRI }
-Frame = ${ DatatypeFrame | ClassFrame | ObjectPropertyFrame | DataPropertyFrame | AnnotationPropertyFrame | IndividualFrame | Misc }
+Frame = { DatatypeFrame | ClassFrame | ObjectPropertyFrame | DataPropertyFrame | AnnotationPropertyFrame | IndividualFrame | Misc }
 
 
 // 2.3 Property and Datatype Expressions
@@ -246,8 +246,8 @@ ClassClause = {
     |   ("SubClassOf:" ~ DescriptionAnnotatedList)
     |   ("EquivalentTo:" ~ DescriptionAnnotatedList)
     |   ("DisjointWith:" ~ DescriptionAnnotatedList)
-    |   ("DisjointUnionOf:" ~ Annotations ~ Description2List)
-    |   ("HasKey:" ~ Annotations ~ (ObjectPropertyExpression | DataPropertyExpression)+)
+    |   ("DisjointUnionOf:" ~ Annotations? ~ Description2List)
+    |   ("HasKey:" ~ Annotations? ~ (ObjectPropertyExpression | DataPropertyExpression)+)
 }
 
 ObjectPropertyFrame = { ("ObjectProperty:" ~ ObjectPropertyIRI) ~ ObjectPropertyClause* }
@@ -260,7 +260,7 @@ ObjectPropertyClause = {
     |   ("EquivalentTo:" ~ ObjectPropertyExpressionAnnotatedList)
     |   ("DisjointWith:" ~ ObjectPropertyExpressionAnnotatedList)
     |   ("InverseOf:" ~ ObjectPropertyExpressionAnnotatedList)
-    |   ("SubPropertyChain:" ~ Annotations ~ ObjectPropertyExpression ~ ("o" ~ ObjectPropertyExpression)+)
+    |   ("SubPropertyChain:" ~ Annotations? ~ ObjectPropertyExpression ~ ("o" ~ ObjectPropertyExpression)+)
 }
 ObjectPropertyCharacteristic = {
         "Functional"
@@ -277,7 +277,7 @@ DataPropertyClause = {
         ("Annotations:" ~ AnnotationAnnotatedList)
     |   ("Domain:" ~ DescriptionAnnotatedList)
     |   ("Range:" ~ DescriptionAnnotatedList)
-    |   ("Characteristics:" ~ Annotations ~ "Functional")
+    |   ("Characteristics:" ~ Annotations? ~ "Functional")
     |   ("SubPropertyOf:" ~ DataPropertyExpressionAnnotatedList)
     |   ("EquivalentTo:" ~ DataPropertyExpressionAnnotatedList)
     |   ("DisjointWith:" ~ DataPropertyExpressionAnnotatedList)
@@ -305,13 +305,13 @@ ObjectPropertyFact = { ObjectPropertyIRI ~ Individual }
 DataPropertyFact = { DataPropertyIRI ~ Literal }
 
 Misc = {
-        ("EquivalentClasses:" ~ Annotations ~ Description2List)
-    |   ("DisjointClasses:" ~ Annotations ~ Description2List)
-    |   ("EquivalentProperties:" ~ Annotations ~ ObjectPropertyExpression2List)
-    |   ("DisjointProperties:" ~ Annotations ~ ObjectPropertyExpression2List)
-    |   ("EquivalentProperties:" ~ Annotations ~ DataPropertyExpression2List)
-    |   ("DisjointProperties:" ~ Annotations ~ DataPropertyExpression2List)
-    |   ("SameIndividual:" ~ Annotations ~ Individual2List)
-    |   ("DifferentIndividuals:" ~ Annotations ~ Individual2List)
-    |   ("HasKey:" ~ Description ~ Annotations ~ (ObjectPropertyExpression | DataPropertyExpression)+ )
+        ("EquivalentClasses:" ~ Annotations? ~ Description2List)
+    |   ("DisjointClasses:" ~ Annotations? ~ Description2List)
+    |   ("EquivalentProperties:" ~ Annotations? ~ ObjectPropertyExpression2List)
+    |   ("DisjointProperties:" ~ Annotations? ~ ObjectPropertyExpression2List)
+    |   ("EquivalentProperties:" ~ Annotations? ~ DataPropertyExpression2List)
+    |   ("DisjointProperties:" ~ Annotations? ~ DataPropertyExpression2List)
+    |   ("SameIndividual:" ~ Annotations? ~ Individual2List)
+    |   ("DifferentIndividuals:" ~ Annotations? ~ Individual2List)
+    |   ("HasKey:" ~ Description ~ Annotations? ~ (ObjectPropertyExpression | DataPropertyExpression)+ )
 }
