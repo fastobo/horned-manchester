@@ -337,6 +337,28 @@ mod tests {
                     <http://purl.obolibrary.org/obo/BFO_0000063>
             "#
         );
+        assert_parse!(
+            Rule::ObjectPropertyFrame,
+            r#"
+            ObjectProperty: <http://purl.obolibrary.org/obo/RO_0004032>
+
+                Annotations: 
+                    <http://purl.obolibrary.org/obo/RO_0004049> <http://purl.obolibrary.org/obo/RO_0002264>,
+                    <http://purl.obolibrary.org/obo/plana#seeAlso> <http://wiki.geneontology.org/index.php/Acts_upstream_of_or_within,_positive_effect>,
+                    <http://www.geneontology.org/formats/oboInOwl#created_by> "cjm",
+                    <http://www.geneontology.org/formats/oboInOwl#creation_date> "2018-01-26T23:49:30Z",
+                    <http://www.geneontology.org/formats/oboInOwl#hasOBONamespace> "Planarian_Anatomy",
+                    <http://www.geneontology.org/formats/oboInOwl#id> "RO:0004032",
+                    rdfs:label "acts upstream of or within, positive effect"
+                
+                SubPropertyOf: 
+                    <http://purl.obolibrary.org/obo/RO_0002264>
+                
+                SubPropertyChain: 
+                    <http://purl.obolibrary.org/obo/RO_0002327> o <http://purl.obolibrary.org/obo/RO_0004047>  
+            
+            "#
+        );
     }
 
     #[test]

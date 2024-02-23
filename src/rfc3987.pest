@@ -41,7 +41,7 @@ RFC3987_IriPctEncoded = ${ "%" ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT }
 RFC3987_IriUnreserved = @{ ASCII_ALPHA | ASCII_DIGIT | "-" | "." | "_" | "~" }
 RFC3987_IriReserved   = @{ RFC3987_IriGenDelims | RFC3987_IriSubDelims }
 RFC3987_IriGenDelims  = @{":" | "/" | "?" | "#" | "[" | "]" | "@"}
-RFC3987_IriSubDelims  = @{"!" | "$" | "&" | "'" | "(" | ")" | "*" | "+" | ";" | "="} // NOTE: "," is allowed but fails with lists
+RFC3987_IriSubDelims  = @{"!" | "$" | "&" | "'" | "(" | ")" | "*" | "+" | ";" | "=" | "," }
 RFC3987_IriDecOctet   = ${
     ASCII_DIGIT
   | (('1' .. '9') ~ ASCII_DIGIT)
