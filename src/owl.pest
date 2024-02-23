@@ -3,17 +3,24 @@ WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
 COMMENT = _{ "#" ~ (!"\n" ~ !"\r" ~ ANY)* }
 
 
-LIT_PREFIX = _{ "Prefix" }
-LIT_ONTOLOGY = _{ "Ontology" }
-LIT_IMPORT = _{ "Import" }
-LIT_DECLARATION = _{ "Declaration" }
-LIT_CLASS = _{ "Class" }
-LIT_DATATYPE = _{ "Datatype" }
-LIT_OBJECT_PROPERTY = _{ "ObjectProperty" }
-LIT_DATA_PROPERTY = _{ "DataProperty" }
-LIT_ANNOTATION_PROPERTY = _{ "AnnotationProperty" }
-LIT_NAMED_INDIVIDUAL = _{ "NamedIndividual" }
-LIT_ANNOTATION = _{ "Annotation" }
+LIT_PREFIX              = { "Prefix" }
+LIT_ONTOLOGY            = { "Ontology" }
+LIT_IMPORT              = { "Import" }
+LIT_DECLARATION         = { "Declaration" }
+LIT_CLASS               = { "Class" }
+LIT_DATATYPE            = { "Datatype" }
+LIT_OBJECT_PROPERTY     = { "ObjectProperty" }
+LIT_DATA_PROPERTY       = { "DataProperty" }
+LIT_ANNOTATION_PROPERTY = { "AnnotationProperty" }
+LIT_NAMED_INDIVIDUAL    = { "NamedIndividual" }
+LIT_ANNOTATION          = { "Annotation" }
+LIT_ANNOTATIONS         = { "Annotations" }
+LIT_SUB_CLASS_OF        = { "SubClassOf" }
+LIT_EQUIVALENT_TO       = { "EquivalentTo" }
+LIT_DISJOINT_WITH       = { "DisjointWith" }
+LIT_DISJOINT_UNION_OF   = { "DisjointUnionOf" }
+LIT_HAS_KEY             = { "HasKey" }
+LIT_NOT                 = { "not" }
 
 
 LBRACKET = _{ "(" }
@@ -136,7 +143,7 @@ Digit              = @{ ASCII_DIGIT }
 Zero               = @{ "0" }
 
 ClassIRI              = { IRI }
-Datatype              = { DatatypeIRI | "integer" | "decimal" | "float" | "string" }
+Datatype              = { "integer" | "decimal" | "float" | "string" | DatatypeIRI }
 DatatypeIRI           = { IRI }
 ObjectPropertyIRI     = { IRI }
 DataPropertyIRI       = { IRI }
@@ -174,10 +181,12 @@ AnnotationTarget        = { NodeID | IRI | Literal }
 
 OntologyDocument  = { PrefixDeclaration* ~ Ontology }
 PrefixDeclaration = { "Prefix:" ~ PrefixName ~ FullIRI }
-Ontology = { "Ontology:" ~ ( OntologyIRI ~ VersionIRI?)? ~ Import* ~ Annotations* ~ Frame* }
+Ontology = { "Ontology:" ~ OntologyID? ~ Import* ~ Annotations* ~ Frame* }
+OntologyID = { OntologyIRI ~ VersionIRI? }
 OntologyIRI = { IRI }
 VersionIRI = { IRI }
-Import = { "Import:" ~ IRI }
+Import = { "Import:" ~ ImportIRI }
+ImportIRI = { IRI }
 Frame = { DatatypeFrame | ClassFrame | ObjectPropertyFrame | DataPropertyFrame | AnnotationPropertyFrame | IndividualFrame | Misc }
 
 
@@ -189,7 +198,7 @@ DataPropertyExpression   = { DataPropertyIRI }
 
 DataRange = { DataConjunction ~ ("or" ~ DataConjunction)* }
 DataConjunction = { DataPrimary ~ ("and" ~ DataPrimary)*  }
-DataPrimary = { "not"? ~ DataAtomic }
+DataPrimary = { LIT_NOT? ~ DataAtomic }
 DataAtomic = { 
         ( LCURLY ~ LiteralList ~ RCURLY) 
     |   ( LBRACKET ~ DataRange ~ RBRACKET )
@@ -205,10 +214,10 @@ RestrictionValue = { Literal }
 
 Description = { Conjuction ~ ("or" ~ Conjuction)* }
 Conjuction = { 
-        (ClassIRI ~ "that" ~ "not"? ~ Restriction ~ ( "and" ~ "not"? ~ Restriction )*)
+        (ClassIRI ~ "that" ~ LIT_NOT? ~ Restriction ~ ( "and" ~ LIT_NOT? ~ Restriction )*)
     |   (Primary ~ ("and" ~ Primary)*)
 }
-Primary = { "not"? ~ (Restriction | Atomic) }
+Primary = { LIT_NOT? ~ (Restriction | Atomic) }
 Restriction = {
         (DataPropertyExpression ~ "some" ~ DataPrimary )
     |   (DataPropertyExpression ~ "only" ~ DataPrimary )
@@ -242,12 +251,12 @@ DatatypeFrame = {
 
 ClassFrame  = { ("Class:" ~ ClassIRI) ~ ClassClause* }
 ClassClause = {
-        ("Annotations:" ~ AnnotationAnnotatedList)
-    |   ("SubClassOf:" ~ DescriptionAnnotatedList)
-    |   ("EquivalentTo:" ~ DescriptionAnnotatedList)
-    |   ("DisjointWith:" ~ DescriptionAnnotatedList)
-    |   ("DisjointUnionOf:" ~ Annotations? ~ Description2List)
-    |   ("HasKey:" ~ Annotations? ~ (ObjectPropertyExpression | DataPropertyExpression)+)
+        (LIT_ANNOTATIONS ~ COLON ~ AnnotationAnnotatedList)
+    |   (LIT_SUB_CLASS_OF ~ COLON ~ DescriptionAnnotatedList)
+    |   (LIT_EQUIVALENT_TO ~ COLON ~ DescriptionAnnotatedList)
+    |   (LIT_DISJOINT_WITH ~ COLON ~ DescriptionAnnotatedList)
+    |   (LIT_DISJOINT_UNION_OF ~ COLON ~ Annotations? ~ Description2List)
+    |   (LIT_HAS_KEY ~ COLON ~ Annotations? ~ (ObjectPropertyExpression | DataPropertyExpression)+)
 }
 
 ObjectPropertyFrame = { ("ObjectProperty:" ~ ObjectPropertyIRI) ~ ObjectPropertyClause* }
@@ -300,7 +309,7 @@ IndividualClause = {
     |   ("DifferentFrom:" ~ IndividualAnnotatedList)
 }
 
-Fact = { "not"? ~ (ObjectPropertyFact | DataPropertyFact) }
+Fact = { LIT_NOT? ~ (ObjectPropertyFact | DataPropertyFact) }
 ObjectPropertyFact = { ObjectPropertyIRI ~ Individual }
 DataPropertyFact = { DataPropertyIRI ~ Literal }
 

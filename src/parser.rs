@@ -69,7 +69,7 @@ mod tests {
     #[test]
     fn annotation_property_frame() {
         assert_parse!(
-            Rule::AnnotationPropertyFrame, 
+            Rule::AnnotationPropertyFrame,
             r#"
             AnnotationProperty: creator
                 Domain: Entity
@@ -82,7 +82,7 @@ mod tests {
             r#"
             AnnotationProperty: <http://purl.obolibrary.org/obo/IAO_0000115>
 
-                Annotations: 
+                Annotations:
                     rdfs:label "definition"
             "#
         );
@@ -111,23 +111,23 @@ mod tests {
 
     #[test]
     fn class_clause() {
-        assert_parse!(Rule::ClassClause, r#"SubClassOf: owl:Thing that hasFirstName exactly 1"#); 
-        assert_parse!(Rule::ClassClause, r#"SubClassOf: owl:Thing that hasFirstName only string[minLength 1]"#); 
-        assert_parse!(Rule::ClassClause, r#"SubClassOf: owl:Thing that hasFirstName exactly 1 and hasFirstName only string[minLength 1]"#); 
-        assert_parse!(Rule::ClassClause, r#"SubClassOf: hasAge exactly 1 and hasAge only not NegInt"#); 
-        assert_parse!(Rule::ClassClause, r#"SubClassOf: hasGender exactly 1 and hasGender only {female , male}"#); 
-        assert_parse!(Rule::ClassClause, r#"SubClassOf: hasSSN max 1, hasSSN min 1"#); 
-        assert_parse!(Rule::ClassClause, r#"SubClassOf: not hates Self"#); 
-        assert_parse!(Rule::ClassClause, r#"EquivalentTo: g:People"#); 
-        assert_parse!(Rule::ClassClause, r#"DisjointWith: g:Rock , g:Mineral"#); 
-        assert_parse!(Rule::ClassClause, r#"DisjointUnionOf: Annotations: description "either child or adult" Child, Adult"#); 
-        assert_parse!(Rule::ClassClause, r#"HasKey: Annotations: description "has social security number" hasSSN"#); 
+        assert_parse!(Rule::ClassClause, r#"SubClassOf: owl:Thing that hasFirstName exactly 1"#);
+        assert_parse!(Rule::ClassClause, r#"SubClassOf: owl:Thing that hasFirstName only string[minLength 1]"#);
+        assert_parse!(Rule::ClassClause, r#"SubClassOf: owl:Thing that hasFirstName exactly 1 and hasFirstName only string[minLength 1]"#);
+        assert_parse!(Rule::ClassClause, r#"SubClassOf: hasAge exactly 1 and hasAge only not NegInt"#);
+        assert_parse!(Rule::ClassClause, r#"SubClassOf: hasGender exactly 1 and hasGender only {female , male}"#);
+        assert_parse!(Rule::ClassClause, r#"SubClassOf: hasSSN max 1, hasSSN min 1"#);
+        assert_parse!(Rule::ClassClause, r#"SubClassOf: not hates Self"#);
+        assert_parse!(Rule::ClassClause, r#"EquivalentTo: g:People"#);
+        assert_parse!(Rule::ClassClause, r#"DisjointWith: g:Rock , g:Mineral"#);
+        assert_parse!(Rule::ClassClause, r#"DisjointUnionOf: Annotations: description "either child or adult" Child, Adult"#);
+        assert_parse!(Rule::ClassClause, r#"HasKey: Annotations: description "has social security number" hasSSN"#);
     }
 
     #[test]
     fn class_frame() {
         assert_parse!(
-            Rule::ClassFrame, 
+            Rule::ClassFrame,
             r#"
             Class: Person
                 SubClassOf: owl:Thing that hasFirstName exactly 1 and hasFirstName only string[minLength 1]
@@ -139,6 +139,40 @@ mod tests {
                 DisjointWith: g:Rock , g:Mineral
                 DisjointUnionOf: Annotations: description "either child or adult" Child, Adult
                 HasKey: Annotations: description "has social security number" hasSSN
+            "#
+        );
+        assert_parse!(
+            Rule::ClassFrame,
+            r#"
+            Class: <http://purl.obolibrary.org/obo/APO_0000098>
+
+                Annotations:
+
+                        Annotations: <http://www.geneontology.org/formats/oboInOwl#hasDbXref> "SGD:curators"
+                    <http://purl.obolibrary.org/obo/IAO_0000115> "The ability to utilize the specified compound as a carbon source.",
+                    <http://www.geneontology.org/formats/oboInOwl#hasAlternativeId> "YPO:0000098",
+                    <http://www.geneontology.org/formats/oboInOwl#hasOBONamespace> "observable",
+                    <http://www.geneontology.org/formats/oboInOwl#id> "APO:0000098",
+                    <http://www.geneontology.org/formats/oboInOwl#inSubset> <http://purl.obolibrary.org/obo/apo#AspGD>,
+                    <http://www.geneontology.org/formats/oboInOwl#inSubset> <http://purl.obolibrary.org/obo/apo#CGD>,
+                    <http://www.geneontology.org/formats/oboInOwl#inSubset> <http://purl.obolibrary.org/obo/apo#CryptoGD>,
+                    <http://www.geneontology.org/formats/oboInOwl#inSubset> <http://purl.obolibrary.org/obo/apo#SGD>,
+                    rdfs:label "utilization of carbon source"
+
+                SubClassOf:
+                    <http://purl.obolibrary.org/obo/APO_0000096>
+            "#
+        );
+        assert_parse!(
+            Rule::ClassFrame,
+            r#"
+            Class: <http://purl.obolibrary.org/obo/APO_0000098>
+
+                Annotations:
+                    rdfs:label "utilization of carbon source"
+
+                SubClassOf:
+                    <http://purl.obolibrary.org/obo/APO_0000096>
             "#
         );
     }
@@ -156,7 +190,7 @@ mod tests {
     #[test]
     fn data_property_frame() {
         assert_parse!(
-            Rule::DataPropertyFrame, 
+            Rule::DataPropertyFrame,
             r#"
             DataProperty: hasAge
                 Characteristics: Annotations: description "functional" Functional
@@ -306,7 +340,7 @@ mod tests {
             r#"
             ObjectProperty: <http://purl.obolibrary.org/obo/BFO_0000062>
 
-                Annotations: 
+                Annotations:
                     <http://purl.obolibrary.org/obo/IAO_0000111> "preceded by",
                     <http://purl.obolibrary.org/obo/IAO_0000115> "x is preceded by y if and only if the time point at which y ends is before or equivalent to the time point at which x starts. Formally: x preceded by y iff ω(y) <= α(x), where α is a function that maps a process to a start point, and ω is a function that maps a process to an end point.",
                     <http://purl.obolibrary.org/obo/IAO_0000116> "An example is: translation preceded_by transcription; aging preceded_by development (not however death preceded_by aging). Where derives_from links classes of continuants, preceded_by links classes of processes. Clearly, however, these two relations are not independent of each other. Thus if cells of type C1 derive_from cells of type C, then any cell division involving an instance of C1 in a given lineage is preceded_by cellular processes involving an instance of C.    The assertion P preceded_by P1 tells us something about Ps in general: that is, it tells us something about what happened earlier, given what we know about what happened later. Thus it does not provide information pointing in the opposite direction, concerning instances of P1 in general; that is, that each is such as to be succeeded by some instance of P. Note that an assertion to the effect that P preceded_by P1 is rather weak; it tells us little about the relations between the underlying instances in virtue of which the preceded_by relation obtains. Typically we will be interested in stronger relations, for example in the relation immediately_preceded_by, or in relations which combine preceded_by with a condition to the effect that the corresponding instances of P and P1 share participants, or that their participants are connected by relations of derivation, or (as a first step along the road to a treatment of causality) that the one process in some way affects (for example, initiates or regulates) the other.",
@@ -317,23 +351,23 @@ mod tests {
                     <http://www.geneontology.org/formats/oboInOwl#id> "BFO:0000062",
                     <http://www.geneontology.org/formats/oboInOwl#inSubset> <http://purl.obolibrary.org/obo/plana#ro-eco>,
                     rdfs:label "preceded by"
-                
-                SubPropertyOf: 
+
+                SubPropertyOf:
                     <http://purl.obolibrary.org/obo/RO_0002086>
-                
-                SubPropertyChain: 
+
+                SubPropertyChain:
                     <http://purl.obolibrary.org/obo/BFO_0000050> o <http://purl.obolibrary.org/obo/BFO_0000062>
-                
-                Characteristics: 
+
+                Characteristics:
                     Transitive
-                
-                Domain: 
+
+                Domain:
                     <http://purl.obolibrary.org/obo/BFO_0000003>
-                
-                Range: 
+
+                Range:
                     <http://purl.obolibrary.org/obo/BFO_0000003>
-                
-                InverseOf: 
+
+                InverseOf:
                     <http://purl.obolibrary.org/obo/BFO_0000063>
             "#
         );
@@ -342,7 +376,7 @@ mod tests {
             r#"
             ObjectProperty: <http://purl.obolibrary.org/obo/RO_0004032>
 
-                Annotations: 
+                Annotations:
                     <http://purl.obolibrary.org/obo/RO_0004049> <http://purl.obolibrary.org/obo/RO_0002264>,
                     <http://purl.obolibrary.org/obo/plana#seeAlso> <http://wiki.geneontology.org/index.php/Acts_upstream_of_or_within,_positive_effect>,
                     <http://www.geneontology.org/formats/oboInOwl#created_by> "cjm",
@@ -350,13 +384,13 @@ mod tests {
                     <http://www.geneontology.org/formats/oboInOwl#hasOBONamespace> "Planarian_Anatomy",
                     <http://www.geneontology.org/formats/oboInOwl#id> "RO:0004032",
                     rdfs:label "acts upstream of or within, positive effect"
-                
-                SubPropertyOf: 
+
+                SubPropertyOf:
                     <http://purl.obolibrary.org/obo/RO_0002264>
-                
-                SubPropertyChain: 
-                    <http://purl.obolibrary.org/obo/RO_0002327> o <http://purl.obolibrary.org/obo/RO_0004047>  
-            
+
+                SubPropertyChain:
+                    <http://purl.obolibrary.org/obo/RO_0002327> o <http://purl.obolibrary.org/obo/RO_0004047>
+
             "#
         );
     }
@@ -388,7 +422,7 @@ mod tests {
             AnnotationProperty: <http://www.geneontology.org/formats/oboInOwl#auto-generated-by>
 
             AnnotationProperty: <http://www.geneontology.org/formats/oboInOwl#date>
-            
+
             AnnotationProperty: <http://www.geneontology.org/formats/oboInOwl#default-namespace>
             "#
         );
