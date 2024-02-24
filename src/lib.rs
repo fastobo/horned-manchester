@@ -17,6 +17,7 @@ mod from_omn;
 use std::borrow::Borrow;
 use std::fs::File;
 use std::io::Read;
+use std::path::Path;
 
 use curie::PrefixMapping;
 use horned_owl::model::IRI;
@@ -112,4 +113,29 @@ where
     let mut s = String::new();
     r.read_to_string(&mut s)?;
     from_str(s)
+}
+
+/// Parse an entire OWL document from a file on the local filesystem.
+#[inline]
+pub fn from_file<A, O, P>(path: P) -> Result<(O, PrefixMapping)>
+where
+    A: ForIRI,
+    O: Ontology<A> + MutableOntology<A> + FromManchester<A>,
+    P: AsRef<Path>,
+{
+    let f = File::open(path)?;
+    #[cfg(not(feature = "memmap"))]
+    return from_reader(f);
+
+    #[cfg(feature = "memmap")]
+    unsafe {
+        let map = memmap::Mmap::map(&f)?;
+        match std::str::from_utf8(&map) {
+            Ok(text) => from_str(text),
+            Err(error) => Err(Error::IO(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                error,
+            ))),
+        }
+    }
 }
