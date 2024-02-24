@@ -68,6 +68,9 @@ KEYWORD = {
     |   "value" 
     |   "inverse"
 
+    |   "true"
+    |   "false"
+
     |   "length" 
     |   "minLength" 
     |   "maxLength" 
@@ -131,7 +134,7 @@ IndividualList = { Individual ~ (COMMA ~ Individual)* }
 AnnotationAnnotatedList                   = { Annotations? ~ Annotation                   ~ (COMMA ~ Annotations? ~ Annotation)* }
 DescriptionAnnotatedList                  = { Annotations? ~ Description                  ~ (COMMA ~ Annotations? ~ Description)* }
 ObjectPropertyCharacteristicAnnotatedList = { Annotations? ~ ObjectPropertyCharacteristic ~ (COMMA ~ Annotations? ~ ObjectPropertyCharacteristic)* }
-DataPropertyCharacteristicAnnotatedList   = { Annotations? ~ DataPropertyCharacteristic   ~ (COMMA ~ Annotations? ~ ObjectPropertyCharacteristic)* }
+DataPropertyCharacteristicAnnotatedList   = { Annotations? ~ DataPropertyCharacteristic   ~ (COMMA ~ Annotations? ~ DataPropertyCharacteristic)* }
 ObjectPropertyExpressionAnnotatedList     = { Annotations? ~ ObjectPropertyExpression     ~ (COMMA ~ Annotations? ~ ObjectPropertyExpression)* }
 DataPropertyExpressionAnnotatedList       = { Annotations? ~ DataPropertyExpression       ~ (COMMA ~ Annotations? ~ DataPropertyExpression)* }
 IRIAnnotatedList                          = { Annotations? ~ IRI                          ~ (COMMA ~ Annotations? ~ IRI)* }
@@ -174,10 +177,12 @@ Individual            = { NodeID | IndividualIRI }
 IndividualIRI         = { IRI }
 NodeID                = { SPARQL_BlankNodeLabel }
 
-Literal                   = { TypedLiteral | StringLiteralWithLanguage | StringLiteralNoLanguage | IntegerLiteral | DecimalLiteral | FloatingPointLiteral }
 TypedLiteral              = { LexicalValue ~ CARET{2} ~ Datatype }
 StringLiteralNoLanguage   = { QuotedString }
 StringLiteralWithLanguage = { QuotedString ~ AT ~ LanguageTag }
+BooleanLiteral            = { BooleanTrue | BooleanFalse }
+BooleanTrue               = { "true" }
+BooleanFalse              = { "false" }
 LanguageTag               = ${ AT ~ BCP47_LangTag }
 LexicalValue              = ${ QuotedString }
 QuotedString              = ${ DQUOTE ~ ( !DQUOTE ~ ("\\\\" | "\\\"" | ANY) )* ~ DQUOTE }
@@ -185,14 +190,23 @@ FloatingPointLiteral      = ${ (PLUS | MINUS)? ~ ((Digits ~ (POINT ~ Digits)? ~ 
 Exponent                  = ${ ("e" | "E") ~ (PLUS | MINUS)? ~ Digits }
 DecimalLiteral            = ${ (PLUS | MINUS)? ~ Digits ~ POINT ~ Digits }
 IntegerLiteral            = ${ (PLUS | MINUS)? ~ Digits }
+Literal                   = { 
+    TypedLiteral 
+    | StringLiteralWithLanguage 
+    | StringLiteralNoLanguage 
+    | BooleanLiteral                // NOTE: not part of the specification, but the OWL-API emits raw boolean tokens
+    | IntegerLiteral 
+    | DecimalLiteral 
+    | FloatingPointLiteral 
+}
 
 Entity = {
-        (LIT_DATATYPE ~ LBRACKET ~ DatatypeIRI ~ RBRACKET)
-    |   (LIT_CLASS ~ LBRACKET ~ ClassIRI ~ RBRACKET)
-    |   (LIT_OBJECT_PROPERTY ~ LBRACKET ~ ObjectPropertyIRI ~ RBRACKET)
-    |   (LIT_DATA_PROPERTY ~ LBRACKET ~ DataPropertyIRI ~ RBRACKET)
-    |   (LIT_ANNOTATION_PROPERTY ~ LBRACKET ~ AnnotationPropertyIRI ~ RBRACKET)
-    |   (LIT_NAMED_INDIVIDUAL ~ LBRACKET ~ IndividualIRI ~ RBRACKET)
+    (LIT_DATATYPE ~ LBRACKET ~ DatatypeIRI ~ RBRACKET)
+    | (LIT_CLASS ~ LBRACKET ~ ClassIRI ~ RBRACKET)
+    | (LIT_OBJECT_PROPERTY ~ LBRACKET ~ ObjectPropertyIRI ~ RBRACKET)
+    | (LIT_DATA_PROPERTY ~ LBRACKET ~ DataPropertyIRI ~ RBRACKET)
+    | (LIT_ANNOTATION_PROPERTY ~ LBRACKET ~ AnnotationPropertyIRI ~ RBRACKET)
+    | (LIT_NAMED_INDIVIDUAL ~ LBRACKET ~ IndividualIRI ~ RBRACKET)
 }
 
 // 2.2 Ontologies and Annotations
@@ -219,7 +233,8 @@ PropertyExpression       = { ObjectPropertyExpression | DataPropertyExpression }
 
 DataRange = { DataConjunction ~ (KEYWORD_OR ~ DataConjunction)* }
 DataConjunction = { DataPrimary ~ (KEYWORD_AND ~ DataPrimary)*  }
-DataPrimary = { KEYWORD_NOT? ~ DataAtomic }
+DataPrimary = { DataAtomicComplement | DataAtomic }
+DataAtomicComplement = { "not" ~ DataAtomic }
 DataAtomic = { 
         ( LCURLY ~ LiteralList ~ RCURLY) 
     |   ( LBRACKET ~ DataRange ~ RBRACKET )
@@ -239,25 +254,40 @@ Conjuction = {
     |   (Primary ~ (KEYWORD_AND ~ Primary)*)
 }
 Primary = { KEYWORD_NOT? ~ (Restriction | Atomic) }
+
+DataSomeValuesFromRestriction     = { DataPropertyExpression ~ "some" ~ DataPrimary }
+DataAllValuesFromRestriction      = { DataPropertyExpression ~ "only" ~ DataPrimary }
+DataHasValueRestriction           = { DataPropertyExpression ~ "value" ~ Literal }
+DataMinCardinalityRestriction     = { DataPropertyExpression ~ "min" ~ NonNegativeInteger ~ DataPrimary? }
+DataMaxCardinalityRestriction     = { DataPropertyExpression ~ "max" ~ NonNegativeInteger ~ DataPrimary? }
+DataExactCardinalityRestriction   = { DataPropertyExpression ~ "exactly" ~ NonNegativeInteger ~ DataPrimary? }
+ObjectSomeValuesFromRestriction   = { ObjectPropertyExpression ~ "some" ~ Primary }
+ObjectAllValuesFromRestriction    = { ObjectPropertyExpression ~ "only" ~ Primary }
+ObjectHasValueRestriction         = { ObjectPropertyExpression ~ "value" ~ Individual }
+ObjectHasSelfRestriction          = { ObjectPropertyExpression ~ "Self" }
+ObjectMinCardinalityRestriction   = { ObjectPropertyExpression ~ "min" ~ NonNegativeInteger ~ Primary? }
+ObjectMaxCardinalityRestriction   = { ObjectPropertyExpression ~ "max" ~ NonNegativeInteger ~ Primary? }
+ObjectExactCardinalityRestriction = { ObjectPropertyExpression ~ "exactly" ~ NonNegativeInteger ~ Primary? }
 Restriction = {
-        (DataPropertyExpression ~ "some" ~ DataPrimary )
-    |   (DataPropertyExpression ~ "only" ~ DataPrimary )
-    |   (DataPropertyExpression ~ "value" ~ Literal )
-    |   (DataPropertyExpression ~ "min" ~ NonNegativeInteger ~ DataPrimary? )
-    |   (DataPropertyExpression ~ "max" ~ NonNegativeInteger ~ DataPrimary? )
-    |   (DataPropertyExpression ~ "exactly" ~ NonNegativeInteger ~ DataPrimary? )
-    |   (ObjectPropertyExpression ~ "some" ~ Primary)
-    |   (ObjectPropertyExpression ~ "only" ~ Primary)
-    |   (ObjectPropertyExpression ~ "value" ~ Individual)
-    |   (ObjectPropertyExpression ~ "Self")
-    |   (ObjectPropertyExpression ~ "min" ~ NonNegativeInteger ~ Primary? )
-    |   (ObjectPropertyExpression ~ "max" ~ NonNegativeInteger ~ Primary? )
-    |   (ObjectPropertyExpression ~ "exactly" ~ NonNegativeInteger ~ Primary? )
+    DataSomeValuesFromRestriction
+    | DataAllValuesFromRestriction
+    | DataHasValueRestriction
+    | DataMinCardinalityRestriction
+    | DataMaxCardinalityRestriction
+    | DataExactCardinalityRestriction
+    | ObjectSomeValuesFromRestriction
+    | ObjectAllValuesFromRestriction
+    | ObjectHasValueRestriction
+    | ObjectHasSelfRestriction
+    | ObjectMinCardinalityRestriction
+    | ObjectMaxCardinalityRestriction
+    | ObjectExactCardinalityRestriction
 }
+
 Atomic = {
-        ClassIRI 
-    |   ( LCURLY ~ IndividualList ~ RCURLY )
-    |   ( LBRACKET ~ Description ~ RBRACKET )
+    ClassIRI 
+    | ( LCURLY ~ IndividualList ~ RCURLY )
+    | ( LBRACKET ~ Description ~ RBRACKET )
 }
 
 

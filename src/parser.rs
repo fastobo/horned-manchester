@@ -283,6 +283,7 @@ mod tests {
     #[test]
     fn literal() {
         assert_parse!(Rule::Literal, r#"2008"#);
+        assert_parse!(Rule::Literal, r#"true"#);
     }
 
     #[test]
