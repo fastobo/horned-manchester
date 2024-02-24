@@ -57,6 +57,12 @@ pub trait FromPair<A: ForIRI>: Sized {
     fn from_pair_unchecked(pair: Pair<Rule>, context: &Context<'_, A>) -> Result<Self>;
 }
 
+macro_rules! unexpected_rule {
+    ($type:ident, $rule:expr) => {
+        unreachable!("unexpected rule in {}::from_pair: {:?}", stringify!($type), $rule)
+    }
+}
+
 // ---------------------------------------------------------------------------
 
 macro_rules! impl_wrapper {
@@ -122,12 +128,11 @@ impl<A: ForIRI> FromPair<A> for AnnotationValue<A> {
         let inner = pair.into_inner().next().unwrap();
         match inner.as_rule() {
             Rule::NodeID => {
-                Err(Error::from(pest::error::Error::new_from_span(
-                    pest::error::ErrorVariant::CustomError {
-                        message: "anonymous annotation targets are not supported".into(),
-                    },
-                    inner.as_span(),
-                )))
+                // FIXME: currently unsupported in `horned-owl`
+                Err(Error::custom(
+                    "anonymous annotation targets are not supported",
+                    inner,
+                ))
             }
             Rule::IRI => {
                 let iri = FromPair::<A>::from_pair(inner, ctx)?;
@@ -137,7 +142,7 @@ impl<A: ForIRI> FromPair<A> for AnnotationValue<A> {
                 let literal = FromPair::<A>::from_pair(inner, ctx)?;
                 Ok(AnnotationValue::Literal(literal))
             }
-            rule => unreachable!("unexpected rule in AnnotationValue::from_pair: {:?}", rule),
+            rule => unexpected_rule!(AnnotationValue, rule),
         }
     }
 }
@@ -157,7 +162,7 @@ impl<A: ForIRI> FromPair<A> for BTreeSet<Annotation<A>> {
                 Rule::Annotations => {
                     unimplemented!("nested annotation lists not supported")
                 }
-                rule => unreachable!("unexpected rule in BTreeSet<Annotation>::from_pair: {:?}", rule),
+                rule => unexpected_rule!(BTreeSet, rule)
             }
         }
 
@@ -214,7 +219,7 @@ fn from_restriction_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> R
         Rule::ObjectExactCardinalityRestriction => {
             unimplemented!()
         }
-        rule => unreachable!("unexpected rule in ClassExpression::from_pair: {:?}", rule),
+        rule => unexpected_rule!(ClassExpression, rule),
     }
 }
 
@@ -226,7 +231,7 @@ fn from_atomic_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result
         Rule::Description => FromPair::from_pair(inner, ctx),
         Rule::ClassIRI => FromPair::from_pair(inner, ctx).map(ClassExpression::Class),
         Rule::IndividualList => FromPair::from_pair(inner, ctx).map(ClassExpression::ObjectOneOf),
-        rule => unreachable!("unexpected rule in ClassExpression::from_pair: {:?}", rule),
+        rule => unexpected_rule!(ClassExpression, rule),
     }
 }
 
@@ -246,7 +251,7 @@ fn from_primary_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Resul
     let ce = match pair.as_rule() {
         Rule::Restriction => from_restriction_pair(pair, ctx),
         Rule::Atomic => from_atomic_pair(pair, ctx),
-        rule => unreachable!("unexpected rule in ClassExpression::from_pair: {:?}", rule),
+        rule => unexpected_rule!(ClassExpression, rule),
     };
 
     if is_complement {
@@ -284,7 +289,7 @@ fn from_conjuction_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Re
                 Ok(ClassExpression::ObjectIntersectionOf(primaries))
             }
         }
-        rule => unreachable!("unexpected rule in ClassExpression::from_pair: {:?}", rule),
+        rule => unexpected_rule!(ClassExpression, rule),
     }
 }
 
@@ -349,7 +354,7 @@ fn from_data_atomic_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> R
             let literals = FromPair::from_pair(inner.into_inner().next().unwrap(), ctx)?;
             Ok(DataRange::DataOneOf(literals))
         }
-        rule => unreachable!("unexpected rule in DataRange::from_pair: {:?}", rule)
+        rule => unexpected_rule!(DataRange, rule)
     }
 }
 
@@ -366,7 +371,7 @@ impl<A: ForIRI> FromPair<A> for DataRange<A> {
                     .map(Box::new)
                     .map(DataRange::DataComplementOf)
             }
-            rule => unreachable!("unexpected rule in DataRange::from_pair: {:?}", rule)
+            rule => unexpected_rule!(DataRange, rule)
         }
 
     }
@@ -389,7 +394,7 @@ impl<A: ForIRI> FromPair<A> for Datatype<A> {
                 FromPair::from_pair(inner.into_inner().next().unwrap(), ctx)
                     .map(Datatype)
             }
-            rule => unreachable!("unexpected rule in ClassFrame::from_pair: {:?}", rule)
+            rule => unexpected_rule!(ClassFrame, rule)
         }
     }
 }
@@ -407,7 +412,7 @@ impl<A: ForIRI> FromPair<A> for Individual<A> {
             Rule::NodeID => {
                 FromPair::from_pair(inner, ctx).map(Individual::Anonymous)
             }
-            rule => unreachable!("unexpected rule in Individual::from_pair: {:?}", rule),
+            rule => unexpected_rule!(Individual, rule),
         }
     }
 }
@@ -468,29 +473,7 @@ impl<A: ForIRI> FromPair<A> for Literal<A> {
                 };
                 Ok(Literal::Datatype { literal, datatype_iri })
             }
-
-            // Rule::Literal => Self::from_pair(pair.into_inner().next().unwrap(), ctx),
-            // Rule::TypedLiteral => {
-            //     let mut inner = pair.into_inner();
-            //     let literal = String::from_pair(inner.next().unwrap(), ctx)?;
-            //     let dty = Datatype::from_pair(inner.next().unwrap(), ctx)?;
-            //     Ok(Literal::Datatype {
-            //         literal,
-            //         datatype_iri: dty.0,
-            //     })
-            // }
-            // Rule::StringLiteralWithLanguage => {
-            //     let mut inner = pair.into_inner();
-            //     let literal = String::from_pair(inner.next().unwrap(), ctx)?;
-            //     let lang = inner.next().unwrap().as_str()[1..].trim().to_string();
-            //     Ok(Literal::Language { literal, lang })
-            // }
-            // Rule::StringLiteralNoLanguage => {
-            //     let mut inner = pair.into_inner();
-            //     let literal = String::from_pair(inner.next().unwrap(), ctx)?;
-            //     Ok(Literal::Simple { literal })
-            // }
-            rule => unreachable!("unexpected rule in Literal::from_pair: {:?}", rule),
+            rule => unexpected_rule!(Literal, rule),
         }
     }
 }
@@ -559,7 +542,7 @@ impl<A: ForIRI> FromPair<A> for SetOntology<A> {
                 Rule::DataPropertyFrame => DataPropertyFrame::from_pair(inner, ctx)?.into_axioms(),
                 Rule::AnnotationPropertyFrame => AnnotationPropertyFrame::from_pair(inner, ctx)?.into_axioms(),
                 Rule::IndividualFrame => IndividualFrame::from_pair(inner, ctx)?.into_axioms(),
-                rule => unreachable!("unexpected rule in ClassFrame::from_pair: {:?}", rule),
+                rule => unexpected_rule!(ClassFrame, rule),
             };
             for axiom in axioms {
                 ontology.insert(axiom);
@@ -646,7 +629,7 @@ impl<A: ForIRI> FromPair<A> for DatatypeFrame<A> {
                     let axiom = DatatypeDefinition { kind, range }.into();
                     frame.axioms.push(AnnotatedAxiom { ann, axiom });
                 },
-                rule => unreachable!("unexpected rule in ClassFrame::from_pair: {:?}", rule),
+                rule => unexpected_rule!(ClassFrame, rule),
             }
         }
 
@@ -730,7 +713,7 @@ impl<A: ForIRI> FromPair<A> for ClassFrame<A> {
                         // );
                     unimplemented!()
                 }
-                rule => unreachable!("unexpected rule in ClassFrame::from_pair: {:?}", rule),
+                rule => unexpected_rule!(ClassFrame, rule),
             }
         }
 
@@ -782,7 +765,7 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
                             Rule::SymmetricCharacteristic => SymmetricObjectProperty(op).into(),
                             Rule::AsymmetricCharacteristic => AsymmetricObjectProperty(op).into(),
                             Rule::TransitiveCharacteristic => TransitiveObjectProperty(op).into(),
-                            rule => unreachable!("unexpected rule in ObjectPropertyFrame::from_pair: {:?}", rule)
+                            rule => unexpected_rule!(ObjectPropertyFrame, rule)
                         }
                     })
                 }
@@ -817,14 +800,12 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
                             Rule::ObjectPropertyIRI => FromPair::from_pair(pair, ctx)?,
                             Rule::InverseObjectProperty => {
                                 // FIXME: currently unsupported in `horned-owl`
-                                return Err(Error::from(pest::error::Error::new_from_span(
-                                    pest::error::ErrorVariant::CustomError {
-                                        message: "InverseOf cannot contain inverse object property expression".into(),
-                                    },
-                                    pair.as_span(),
-                                )));
+                                return Err(Error::custom(
+                                    "InverseOf cannot contain inverse object property expression",
+                                    pair
+                                ));
                             }
-                            rule => unreachable!("unexpected rule in ObjectPropertyExpression::from_pair: {:?}", rule),
+                            rule => unexpected_rule!(ObjectPropertyExpression, rule),
                         };
                         InverseObjectProperties(op, frame.entity.clone().into()).into()
                     })
@@ -841,7 +822,7 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
                     }.into();
                     frame.axioms.push( AnnotatedAxiom { ann, axiom });
                 },
-                rule => unreachable!("unexpected rule in ObjectPropertyFrame::from_pair: {:?}", rule),
+                rule => unexpected_rule!(ObjectPropertyFrame, rule),
             }
         }
 
@@ -897,7 +878,7 @@ impl<A: ForIRI> FromPair<A> for AnnotationPropertyFrame<A> {
                         }.into()
                     })
                 }
-                rule => unreachable!("unexpected rule in ClassFrame::from_pair: {:?}", rule),
+                rule => unexpected_rule!(AnnotationPropertyFrame, rule)
             }
         }
 
@@ -926,7 +907,7 @@ impl<A: ForIRI> FromPair<A> for PropertyExpression<A> {
                 let pair = inner.into_inner().next().unwrap();
                 FromPair::from_pair(pair, ctx).map(PropertyExpression::DataProperty)
             }
-            rule => unreachable!("unexpected rule in PropertyExpression::from_pair: {:?}", rule),
+            rule => unexpected_rule!(PropertyExpression, rule),
         }
     }
 }
@@ -945,7 +926,7 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyExpression<A> {
                 FromPair::from_pair(pair, ctx)
                     .map(ObjectPropertyExpression::InverseObjectProperty)
             }
-            rule => unreachable!("unexpected rule in ObjectPropertyExpression::from_pair: {:?}", rule),
+            rule => unexpected_rule!(ObjectPropertyExpression, rule),
         }
     }
 }
@@ -987,7 +968,7 @@ impl<A: ForIRI> FromPair<A> for IRI<A> {
                 let iri = inner.into_inner().next().unwrap();
                 Ok(ctx.iri(iri.as_str()))
             }
-            rule => unreachable!("unexpected rule in IRI::from_pair: {:?}", rule),
+            rule => unexpected_rule!(IRI, rule),
         }
     }
 }

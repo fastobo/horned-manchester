@@ -1,4 +1,5 @@
 use super::parser::Rule;
+use pest::iterators::Pair;
 
 /// The result type for this crate.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -69,15 +70,16 @@ pub enum Error {
     /// ```
     #[error("invalid facet: {0}")]
     InvalidFacet(String),
+}
 
-    /// An unsupported construct was used.
-    ///
-    /// See the relevant issue for each unsupported syntax construct; if the
-    /// issue has been resolved, please open an issue on the
-    /// [`fastobo/horned-functional`](https://github.com/fastobo/horned-functional)
-    /// repository so that it can be fixed.
-    #[error("unsupported: {0} (see {1})")]
-    Unsupported(&'static str, &'static str),
+impl Error {
+    // Create a custom `pest` error spanning the given pair.
+    pub fn custom<S: Into<String>>(message: S, pair: Pair<Rule>) -> Self {
+        Self::Pest(pest::error::Error::new_from_span(
+            pest::error::ErrorVariant::CustomError { message: message.into() },
+            pair.as_span(),
+        ))
+    }
 }
 
 impl From<curie::ExpansionError> for Error {
