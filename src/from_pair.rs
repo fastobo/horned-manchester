@@ -122,7 +122,12 @@ impl<A: ForIRI> FromPair<A> for AnnotationValue<A> {
         let inner = pair.into_inner().next().unwrap();
         match inner.as_rule() {
             Rule::NodeID => {
-                unimplemented!("AnnotationValue does not support NodeID yet")
+                Err(Error::from(pest::error::Error::new_from_span(
+                    pest::error::ErrorVariant::CustomError {
+                        message: "anonymous annotation targets are not supported".into(),
+                    },
+                    inner.as_span(),
+                )))
             }
             Rule::IRI => {
                 let iri = FromPair::<A>::from_pair(inner, ctx)?;
@@ -301,21 +306,49 @@ impl<A: ForIRI> FromPair<A> for ClassExpression<A> {
 
 // ---------------------------------------------------------------------------
 
+fn from_data_conjuction_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<DataRange<A>> {
+    debug_assert!(pair.as_rule() == Rule::DataRange);
+
+    let mut ranges = pair
+        .into_inner()
+        .map(|pair| DataRange::from_pair(pair, ctx))
+        .collect::<Result<Vec<_>>>()?;
+    if ranges.len() == 1 {
+        Ok(ranges.pop().unwrap())
+    } else {
+        Ok(DataRange::DataIntersectionOf(ranges))
+    }
+}
+
+fn from_data_range_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<DataRange<A>> {
+    debug_assert!(pair.as_rule() == Rule::DataRange);
+
+    let mut ranges = pair
+        .into_inner()
+        .map(|pair| from_data_conjuction_pair(pair, ctx))
+        .collect::<Result<Vec<_>>>()?;
+    if ranges.len() == 1 {
+        Ok(ranges.pop().unwrap())
+    } else {
+        Ok(DataRange::DataUnionOf(ranges))
+    }
+}
+
 fn from_data_atomic_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<DataRange<A>> {
     debug_assert!(pair.as_rule() == Rule::DataAtomic);
 
     let inner = pair.into_inner().next().unwrap();
     match inner.as_rule() {
+        Rule::DataRange => from_data_range_pair(inner, ctx),
+        Rule::DatatypeRestriction => unimplemented!(),
         Rule::Datatype => {
             let datatype = Datatype::from_pair(inner, ctx)?;
             Ok(DataRange::Datatype(datatype))
         }
-        Rule::DatatypeRestriction => unimplemented!(),
         Rule::LiteralList => {
             let literals = FromPair::from_pair(inner.into_inner().next().unwrap(), ctx)?;
             Ok(DataRange::DataOneOf(literals))
         }
-        Rule::DataRange => unimplemented!(),
         rule => unreachable!("unexpected rule in DataRange::from_pair: {:?}", rule)
     }
 }
@@ -572,22 +605,16 @@ where
 
 // ---------------------------------------------------------------------------
 
-// impl<A: ForIRI> FromPair<A> for Frame<A> {
-//     const RULE: Rule = Rule::Frame;
-//     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
-//         let inner = pair.into_inner().next().unwrap();
-//         match inner.as_rule() {
-//             Rule::DatatypeFrame => FromPair::from_pair(inner, ctx).map(Frame::Datatype),
-//             Rule::ClassFrame => FromPair::from_pair(inner, ctx).map(Frame::Class),
-//             Rule::ObjectPropertyFrame => FromPair::from_pair(inner, ctx).map(Frame::ObjectProperty),
-//             Rule::DataPropertyFrame => FromPair::from_pair(inner, ctx).map(Frame::DataProperty),
-//             Rule::AnnotationPropertyFrame => FromPair::from_pair(inner, ctx).map(Frame::AnnotationProperty),
-//             Rule::IndividualFrame => FromPair::from_pair(inner, ctx).map(Frame::Individual),
-//             Rule::Misc => unimplemented!(),
-//             rule => unreachable!("unexpected rule in Frame::from_pair: {:?}", rule),
-//         }
-//     }
-// }
+macro_rules! annotated_axiom {
+    ($pair:ident, $inner:ident, $ctx:ident, $frame:ident, axiom = $axiom:expr) => {{
+        let mut annotated_list = $inner.into_inner().next().unwrap().into_inner();
+        while let Some(mut $pair) = annotated_list.next() {
+            let ann = axiom_annotations(&mut $pair, &mut annotated_list, $ctx)?;
+            let axiom = $axiom;
+            $frame.axioms.push(AnnotatedAxiom { axiom, ann });
+        }
+    }}
+}
 
 impl<A: ForIRI> FromPair<A> for DatatypeFrame<A> {
     const RULE: Rule = Rule::DatatypeFrame;
@@ -601,8 +628,24 @@ impl<A: ForIRI> FromPair<A> for DatatypeFrame<A> {
             debug_assert!(pair.as_rule() == Rule::DatatypeClause);
             let mut inner = pair.into_inner().next().unwrap();
             match inner.as_rule() {
-                Rule::DatatypeAnnotationsClause => unimplemented!(),
-                Rule::DatatypeEquivalentToClause => unimplemented!(),
+                Rule::DatatypeAnnotationsClause => {
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
+                        let ann = FromPair::from_pair(pair, ctx)?;
+                        let subject = AnnotationSubject::IRI(frame.entity.0.clone());
+                        AnnotationAssertion { subject, ann }.into()
+                    })
+                },
+                Rule::DatatypeEquivalentToClause => {
+                    let mut pairs = inner.into_inner();
+                    let mut pair = pairs.next().unwrap();
+                    let ann = axiom_annotations(&mut pair, &mut pairs, ctx)?;
+
+                    let range = from_data_range_pair(pair, ctx)?;
+                    let kind = frame.entity.clone();
+                    
+                    let axiom = DatatypeDefinition { kind, range }.into();
+                    frame.axioms.push(AnnotatedAxiom { ann, axiom });
+                },
                 rule => unreachable!("unexpected rule in ClassFrame::from_pair: {:?}", rule),
             }
         }
@@ -624,57 +667,35 @@ impl<A: ForIRI> FromPair<A> for ClassFrame<A> {
             let mut inner = pair.into_inner().next().unwrap();
             match inner.as_rule() {
                 Rule::ClassAnnotationsClause => {
-                    let mut annotated_list = inner.into_inner().next().unwrap().into_inner();
-                    while let Some(mut pair) = annotated_list.next() {
-                        let annotations = axiom_annotations(&mut pair, &mut annotated_list, ctx)?;
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
                         let ann = FromPair::from_pair(pair, ctx)?;
                         let subject = AnnotationSubject::IRI(frame.entity.0.clone());
-                        let assertion = AnnotationAssertion { subject, ann };
-                        frame.axioms.push(
-                            AnnotatedAxiom {
-                                axiom: Axiom::AnnotationAssertion(assertion),
-                                ann: annotations
-                            }
-                        );
-                    }
+                        AnnotationAssertion { subject, ann }.into()
+                    })
                 }
                 Rule::ClassSubClassOfClause => {
-                    let mut value = inner.into_inner().next().unwrap().into_inner();
-                    while let Some(mut pair) = value.next() {
-                        let annotations = axiom_annotations(&mut pair, &mut value, ctx)?;
-                        let sub_class_of = SubClassOf {
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
+                        SubClassOf {
                             sup: ClassExpression::from_pair(pair, ctx)?,
                             sub: ClassExpression::Class(frame.entity.clone()),
-                        };
-                        frame.axioms.push(
-                            AnnotatedAxiom {
-                                axiom: Axiom::SubClassOf(sub_class_of),
-                                ann: annotations,
-                            }
-                        );
-                    }
+                        }.into()
+                    })
                 }
                 Rule::ClassEquivalentToClause => {
-                    let mut value = inner.into_inner().next().unwrap().into_inner();
-                    while let Some(mut pair) = value.next() {
-                        let ann = axiom_annotations(&mut pair, &mut value, ctx)?;
-                        let axiom = EquivalentClasses(vec![
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
+                        EquivalentClasses(vec![
                             ClassExpression::Class(frame.entity.clone()),
                             ClassExpression::from_pair(pair, ctx)?,
-                        ]).into();
-                        frame.axioms.push(AnnotatedAxiom { axiom, ann });
-                    }
+                        ]).into()
+                    })
                 }
                 Rule::ClassDisjointWithClause => {
-                    let mut value = inner.into_inner().next().unwrap().into_inner();
-                    while let Some(mut pair) = value.next() {
-                        let ann = axiom_annotations(&mut pair, &mut value, ctx)?;
-                        let axiom = DisjointClasses(vec![
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
+                        DisjointClasses(vec![
                             ClassExpression::Class(frame.entity.clone()),
                             ClassExpression::from_pair(pair, ctx)?,
-                        ]).into();
-                        frame.axioms.push(AnnotatedAxiom { axiom, ann });
-                    }
+                        ]).into()
+                    })
                 }
                 Rule::ClassDisjointUnionOfClause => {
                     let mut value = inner.into_inner();
@@ -730,46 +751,30 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
             let mut inner = pair.into_inner().next().unwrap();
             match inner.as_rule() {
                 Rule::ObjectPropertyAnnotationsClause => {
-                    let mut annotated_list = inner.into_inner().next().unwrap().into_inner();
-                    while let Some(mut pair) = annotated_list.next() {
-                        let annotations = axiom_annotations(&mut pair, &mut annotated_list, ctx)?;
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
                         let ann = FromPair::from_pair(pair, ctx)?;
                         let subject = AnnotationSubject::IRI(frame.entity.0.clone());
-                        let assertion = AnnotationAssertion { subject, ann };
-                        frame.axioms.push(
-                            AnnotatedAxiom {
-                                axiom: Axiom::AnnotationAssertion(assertion),
-                                ann: annotations
-                            }
-                        );
-                    }
+                        AnnotationAssertion { subject, ann }.into()
+                    })
                 }
                 Rule::ObjectPropertyDomainClause => {
-                    let mut annotated_list = inner.into_inner().next().unwrap().into_inner();
-                    while let Some(mut pair) = annotated_list.next() {
-                        let ann = axiom_annotations(&mut pair, &mut annotated_list, ctx)?;
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
                         let ce = FromPair::from_pair(pair, ctx)?;
                         let ope = frame.entity.clone().into();
-                        let axiom = ObjectPropertyDomain { ope, ce }.into();
-                        frame.axioms.push(AnnotatedAxiom { axiom, ann });
-                    }
+                        ObjectPropertyDomain { ope, ce }.into()
+                    })
                 },
                 Rule::ObjectPropertyRangeClause => {
-                    let mut annotated_list = inner.into_inner().next().unwrap().into_inner();
-                    while let Some(mut pair) = annotated_list.next() {
-                        let ann = axiom_annotations(&mut pair, &mut annotated_list, ctx)?;
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
                         let ce = FromPair::from_pair(pair, ctx)?;
                         let ope = frame.entity.clone().into();
-                        let axiom = ObjectPropertyRange { ope, ce }.into();
-                        frame.axioms.push(AnnotatedAxiom { axiom, ann });
-                    }
+                        ObjectPropertyRange { ope, ce }.into()
+                    })
                 },
                 Rule::ObjectPropertyCharacteristicsClause => {
-                    let mut annotated_list = inner.into_inner().next().unwrap().into_inner();
-                    while let Some(mut pair) = annotated_list.next() {
-                        let ann = axiom_annotations(&mut pair, &mut annotated_list, ctx)?;
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
                         let op = ObjectPropertyExpression::ObjectProperty(frame.entity.clone());
-                        let axiom = match pair.into_inner().next().unwrap().as_rule() {
+                        match pair.into_inner().next().unwrap().as_rule() {
                             Rule::FunctionalCharacteristic => FunctionalObjectProperty(op).into(),
                             Rule::InverseFunctionalCharacteristic => InverseFunctionalObjectProperty(op).into(),
                             Rule::ReflexiveCharacteristic => ReflexiveObjectProperty(op).into(),
@@ -778,42 +783,51 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
                             Rule::AsymmetricCharacteristic => AsymmetricObjectProperty(op).into(),
                             Rule::TransitiveCharacteristic => TransitiveObjectProperty(op).into(),
                             rule => unreachable!("unexpected rule in ObjectPropertyFrame::from_pair: {:?}", rule)
-                        };
-                        frame.axioms.push(AnnotatedAxiom { axiom, ann });
-                    }
+                        }
+                    })
                 }
                 Rule::ObjectPropertySubPropertyOfClause => {
-                    let mut value = inner.into_inner().next().unwrap().into_inner();
-                    while let Some(mut pair) = value.next() {
-                        let ann = axiom_annotations(&mut pair, &mut value, ctx)?;
-                        let axiom = SubObjectPropertyOf {
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
+                        SubObjectPropertyOf {
                             sup: ObjectPropertyExpression::from_pair(pair, ctx)?,
                             sub: SubObjectPropertyExpression::ObjectPropertyExpression(frame.entity.clone().into()),
-                        }.into();
-                        frame.axioms.push( AnnotatedAxiom { ann, axiom });
-                    }
+                        }.into()
+                    })
                 },
-                Rule::ObjectPropertyEquivalentToClause => unimplemented!(),
-                Rule::ObjectPropertyDisjointWithClause => unimplemented!(),
+                Rule::ObjectPropertyEquivalentToClause => {
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
+                        EquivalentObjectProperties(vec![
+                            ObjectPropertyExpression::ObjectProperty(frame.entity.clone()),
+                            ObjectPropertyExpression::from_pair(pair, ctx)?,
+                        ]).into()
+                    })
+                },
+                Rule::ObjectPropertyDisjointWithClause => {
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
+                        DisjointObjectProperties(vec![
+                            ObjectPropertyExpression::ObjectProperty(frame.entity.clone()),
+                            ObjectPropertyExpression::from_pair(pair, ctx)?,
+                        ]).into()
+                    })
+                },
                 Rule::ObjectPropertyInverseOfClause => {
-                    let mut value = inner.into_inner().next().unwrap().into_inner();
-                    while let Some(mut pair) = value.next() {
-                        let ann = axiom_annotations(&mut pair, &mut value, ctx)?;
-
-                        let ope = ObjectPropertyExpression::from_pair(pair, ctx)?;
-                        let op = match ope {
-                            ObjectPropertyExpression::ObjectProperty(op) => op,
-                            ObjectPropertyExpression::InverseObjectProperty(_) => {
-                                return Err(Error::Unsupported(
-                                    "inverse object property expression in InverseOf",
-                                    "https://docs.rs/horned-owl/latest/horned_owl/model/enum.ObjectPropertyExpression.html",
-                                ));
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
+                        let pair = pair.into_inner().next().unwrap();
+                        let op = match pair.as_rule() {
+                            Rule::ObjectPropertyIRI => FromPair::from_pair(pair, ctx)?,
+                            Rule::InverseObjectProperty => {
+                                // FIXME: currently unsupported in `horned-owl`
+                                return Err(Error::from(pest::error::Error::new_from_span(
+                                    pest::error::ErrorVariant::CustomError {
+                                        message: "InverseOf cannot contain inverse object property expression".into(),
+                                    },
+                                    pair.as_span(),
+                                )));
                             }
+                            rule => unreachable!("unexpected rule in ObjectPropertyExpression::from_pair: {:?}", rule),
                         };
-
-                        let axiom = InverseObjectProperties(op, frame.entity.clone().into()).into();
-                        frame.axioms.push( AnnotatedAxiom { ann, axiom });
-                    }
+                        InverseObjectProperties(op, frame.entity.clone().into()).into()
+                    })
                 },
                 Rule::ObjectPropertySubPropertyChainClause => {
                     let mut chainlist = inner.into_inner();
@@ -855,79 +869,33 @@ impl<A: ForIRI> FromPair<A> for AnnotationPropertyFrame<A> {
             let mut inner = pair.into_inner().next().unwrap();
             match inner.as_rule() {
                 Rule::AnnotationPropertyAnnotationsClause => {
-                    let mut annotated_list = inner.into_inner().next().unwrap().into_inner();
-                    while let Some(mut pair) = annotated_list.next() {
-                        let annotations = axiom_annotations(&mut pair, &mut annotated_list, ctx)?;
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
                         let ann = FromPair::from_pair(pair, ctx)?;
                         let subject = AnnotationSubject::IRI(frame.entity.0.clone());
-                        let assertion = AnnotationAssertion { subject, ann };
-                        frame.axioms.push(
-                            AnnotatedAxiom {
-                                axiom: Axiom::AnnotationAssertion(assertion),
-                                ann: annotations
-                            }
-                        );
-                    }
+                        AnnotationAssertion { subject, ann }.into()
+                    })
                 }
                 Rule::AnnotationPropertyDomainClause => {
-                    // let mut value = inner.next().unwrap().into_inner().peekable();
-                    // while value.peek().is_some() {
-                    //     let mut pair = value.next().unwrap();
-                    //     let mut annotations = BTreeSet::new();
-
-                    //     if pair.as_rule() == Rule::Annotations {
-                    //         annotations = FromPair::from_pair(pair, ctx)?;
-                    //         pair = value.next().unwrap();
-                    //     }
-
-                    //     let ap = frame.ap.clone();
-                    //     let iri = FromPair::from_pair(pair, ctx)?;
-
-                    //     let apd = AnnotationPropertyDomain { ap, iri };
-                    //     frame.axioms.push(
-                    //         AnnotatedAxiom {
-                    //             axiom: Axiom::AnnotationPropertyDomain(apd),
-                    //             ann: annotations
-                    //         }
-                    //     );
-                    // }
-                    unimplemented!()
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
+                        let iri = FromPair::from_pair(pair, ctx)?;
+                        let ap = frame.entity.clone();
+                        AnnotationPropertyDomain { ap, iri }.into()
+                    })
                 }
                 Rule::AnnotationPropertyRangeClause => {
-                    // let mut value = inner.next().unwrap().into_inner().peekable();
-                    // while value.peek().is_some() {
-                    //     let mut pair = value.next().unwrap();
-                    //     let mut annotations = BTreeSet::new();
-
-                    //     if pair.as_rule() == Rule::Annotations {
-                    //         annotations = FromPair::from_pair(pair, ctx)?;
-                    //         pair = value.next().unwrap();
-                    //     }
-
-                    //     let ap = frame.ap.clone();
-                    //     let iri = FromPair::from_pair(pair, ctx)?;
-
-                    //     let apr = AnnotationPropertyRange { ap, iri };
-                    //     frame.axioms.push(
-                    //         AnnotatedAxiom {
-                    //             axiom: Axiom::AnnotationPropertyRange(apr),
-                    //             ann: annotations
-                    //         }
-                    //     );
-                    // }
-                    unimplemented!()
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
+                        let iri = FromPair::from_pair(pair, ctx)?;
+                        let ap = frame.entity.clone();
+                        AnnotationPropertyRange { ap, iri }.into()
+                    })
                 }
                 Rule::AnnotationPropertySubPropertyOfClause => {
-
-                    let mut annotated_list = inner.into_inner().next().unwrap().into_inner();
-                    while let Some(mut pair) = annotated_list.next() {
-                        let ann = axiom_annotations(&mut pair, &mut annotated_list, ctx)?;
-                        let axiom = SubAnnotationPropertyOf {
+                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
+                        SubAnnotationPropertyOf {
                             sup: AnnotationProperty::from_pair(pair, ctx)?,
                             sub: frame.entity.clone(),
-                        }.into();
-                        frame.axioms.push(AnnotatedAxiom { axiom, ann });
-                    }
+                        }.into()
+                    })
                 }
                 rule => unreachable!("unexpected rule in ClassFrame::from_pair: {:?}", rule),
             }
