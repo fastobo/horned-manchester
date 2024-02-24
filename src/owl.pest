@@ -177,14 +177,11 @@ Individual            = { NodeID | IndividualIRI }
 IndividualIRI         = { IRI }
 NodeID                = { SPARQL_BlankNodeLabel }
 
-TypedLiteral              = { LexicalValue ~ CARET{2} ~ Datatype }
+TypedLiteral              = { QuotedString ~ CARET{2} ~ Datatype }
 StringLiteralNoLanguage   = { QuotedString }
 StringLiteralWithLanguage = { QuotedString ~ AT ~ LanguageTag }
-BooleanLiteral            = { BooleanTrue | BooleanFalse }
-BooleanTrue               = { "true" }
-BooleanFalse              = { "false" }
+BooleanLiteral            = { "true" | "false" }
 LanguageTag               = ${ AT ~ BCP47_LangTag }
-LexicalValue              = ${ QuotedString }
 QuotedString              = ${ DQUOTE ~ ( !DQUOTE ~ ("\\\\" | "\\\"" | ANY) )* ~ DQUOTE }
 FloatingPointLiteral      = ${ (PLUS | MINUS)? ~ ((Digits ~ (POINT ~ Digits)? ~ Exponent?) | (POINT ~ Digits ~ Exponent?)) ~ ( "f" | "F" ) }
 Exponent                  = ${ ("e" | "E") ~ (PLUS | MINUS)? ~ Digits }

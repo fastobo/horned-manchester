@@ -393,7 +393,6 @@ impl<A: ForIRI> FromPair<A> for Literal<A> {
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
         let pair = pair.into_inner().next().unwrap();
         match pair.as_rule() {
-
             Rule::TypedLiteral => {
                 let mut inner = pair.into_inner();
                 let literal = String::from_pair(inner.next().unwrap(), ctx)?;
@@ -403,30 +402,38 @@ impl<A: ForIRI> FromPair<A> for Literal<A> {
                     datatype_iri: dty.0,
                 })
             }
-
             Rule::StringLiteralWithLanguage => {
                 let mut inner = pair.into_inner();
                 let literal = String::from_pair(inner.next().unwrap(), ctx)?;
                 let lang = inner.next().unwrap().as_str()[1..].trim().to_string();
                 Ok(Literal::Language { literal, lang })
             }
-
             Rule::StringLiteralNoLanguage => {
                 let mut inner = pair.into_inner();
                 let literal = String::from_pair(inner.next().unwrap(), ctx)?;
                 Ok(Literal::Simple { literal })
             }
-
             Rule::IntegerLiteral => {
                 unimplemented!()
             }
-
             Rule::DecimalLiteral => {
                 unimplemented!()
             }
-
             Rule::FloatingPointLiteral => {
                 unimplemented!()
+            }
+            Rule::BooleanLiteral => {
+                let literal = pair.as_str().to_string();
+                let curie = Curie::new(Some("xsd"), "boolean");
+                let datatype_iri = if let Some(prefixes) = ctx.prefixes {
+                    prefixes
+                        .expand_curie(&curie)
+                        .map_err(Error::from)
+                        .map(|s| ctx.iri(s))?
+                } else {
+                    return Err(Error::from(curie::ExpansionError::Invalid));
+                };
+                Ok(Literal::Datatype { literal, datatype_iri })
             }
 
             // Rule::Literal => Self::from_pair(pair.into_inner().next().unwrap(), ctx),
@@ -985,7 +992,6 @@ impl<A: ForIRI> FromPair<A> for IRI<A> {
             Rule::SimpleIRI => {
                 let local = inner.into_inner().next().unwrap();
                 let curie = Curie::new(None, local.as_str());
-                let iri = format!("{}", local.as_str());
                 if let Some(prefixes) = ctx.prefixes {
                     prefixes
                         .expand_curie(&curie)
@@ -1060,6 +1066,32 @@ mod tests {
                 ),
             }
         };
+    }
+
+    #[test]
+    fn annotation() {
+        let build = Build::new();
+        let mut prefixes = PrefixMapping::default();
+        prefixes.set_default("http://example.com/owl/families#");
+        prefixes.add_prefix("owl", "http://www.w3.org/2002/07/owl#").unwrap();
+        prefixes.add_prefix("xsd", "http://www.w3.org/2001/XMLSchema#").unwrap();
+
+        assert_parse_into!(
+            Annotation<String>,
+            Rule::Annotation,
+            build,
+            prefixes,
+            r#"owl:deprecated true"#,
+            Annotation {
+                ap: build.annotation_property("http://www.w3.org/2002/07/owl#deprecated"),
+                av: AnnotationValue::Literal(
+                    Literal::Datatype {
+                        literal: "true".into(),
+                        datatype_iri: build.iri("http://www.w3.org/2001/XMLSchema#boolean"),
+                    }
+                ),
+            }
+        );
     }
 
     #[test]
