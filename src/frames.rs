@@ -1,7 +1,4 @@
-use curie::Curie;
-use curie::PrefixMapping;
 use horned_owl::model::*;
-use pest::iterators::Pair;
 
 // ---------------------------------------------------------------------------
 

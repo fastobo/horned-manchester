@@ -1,8 +1,5 @@
-use std::collections::BTreeSet;
-
 use curie::PrefixMapping;
 use horned_owl::model::*;
-use horned_owl::ontology::axiom_mapped::AxiomMappedOntology;
 use horned_owl::ontology::set::SetOntology;
 
 use crate::error::Error;
@@ -107,9 +104,6 @@ implement!(
 
 #[cfg(test)]
 mod tests {
-
-    use super::*;
-    use horned_owl::model::DeclareClass;
 
     // #[test]
     // fn test_remaining_input() {

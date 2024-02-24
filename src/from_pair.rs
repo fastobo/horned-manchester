@@ -2,16 +2,7 @@ use std::collections::BTreeSet;
 
 use curie::Curie;
 use curie::PrefixMapping;
-use horned_owl::io::rdf::reader::RDFOntology;
 use horned_owl::model::*;
-use horned_owl::ontology::axiom_mapped::AxiomMappedOntology;
-use horned_owl::ontology::indexed::ForIndex;
-use horned_owl::ontology::indexed::FourIndexedOntology;
-use horned_owl::ontology::indexed::OneIndexedOntology;
-use horned_owl::ontology::indexed::OntologyIndex;
-use horned_owl::ontology::indexed::ThreeIndexedOntology;
-use horned_owl::ontology::indexed::TwoIndexedOntology;
-use horned_owl::ontology::iri_mapped::IRIMappedOntology;
 use horned_owl::ontology::set::SetOntology;
 use pest::iterators::Pair;
 use pest::iterators::Pairs;
@@ -22,7 +13,7 @@ use crate::frames::AnnotationPropertyFrame;
 use crate::frames::ClassFrame;
 use crate::frames::DataPropertyFrame;
 use crate::frames::DatatypeFrame;
-use crate::frames::Frame;
+
 use crate::frames::IndividualFrame;
 use crate::frames::ObjectPropertyFrame;
 use crate::parser::Rule;
@@ -41,7 +32,7 @@ pub trait FromPair<A: ForIRI>: Sized {
     /// Create a new instance from a `Pair`.
     #[inline]
     fn from_pair(pair: Pair<Rule>, context: &Context<'_, A>) -> Result<Self> {
-        if cfg!(debug_assertions) && &pair.as_rule() != &Self::RULE {
+        if cfg!(debug_assertions) && pair.as_rule() != Self::RULE {
             return Err(Error::from(pest::error::Error::new_from_span(
                 pest::error::ErrorVariant::ParsingError {
                     positives: vec![pair.as_rule()],
@@ -158,7 +149,7 @@ impl<A: ForIRI> FromPair<A> for AnnotationValue<A> {
 impl<A: ForIRI> FromPair<A> for BTreeSet<Annotation<A>> {
     const RULE: Rule = Rule::AnnotationAnnotatedList;
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
-        let mut inner = pair.into_inner();
+        let inner = pair.into_inner();
         let mut annotations = BTreeSet::new();
 
         for pair in inner {
@@ -240,7 +231,7 @@ fn from_atomic_pair<A: ForIRI>(
 ) -> Result<ClassExpression<A>> {
     debug_assert!(pair.as_rule() == Rule::Atomic);
 
-    let mut inner = pair.into_inner().next().unwrap();
+    let inner = pair.into_inner().next().unwrap();
     match inner.as_rule() {
         Rule::Description => FromPair::from_pair(inner, ctx),
         Rule::ClassIRI => FromPair::from_pair(inner, ctx).map(ClassExpression::Class),
@@ -447,7 +438,7 @@ impl<A: ForIRI> FromPair<A> for Individual<A> {
 
 impl<A: ForIRI> FromPair<A> for AnonymousIndividual<A> {
     const RULE: Rule = Rule::NodeID;
-    fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
+    fn from_pair_unchecked(pair: Pair<Rule>, _ctx: &Context<'_, A>) -> Result<Self> {
         Ok(AnonymousIndividual(pair.as_str().to_string().into()))
     }
 }
@@ -532,7 +523,7 @@ impl<A: ForIRI> FromPair<A> for SetOntology<A> {
         let mut pairs = pair.into_inner().peekable();
 
         let mut ontology = SetOntology::new();
-        let mut ontology_id = ontology.mut_id();
+        let ontology_id = ontology.mut_id();
 
         // Parse ontology IRI and version IRI if any
         if pairs
@@ -654,7 +645,7 @@ impl<A: ForIRI> FromPair<A> for DatatypeFrame<A> {
 
         for pair in pairs {
             debug_assert!(pair.as_rule() == Rule::DatatypeClause);
-            let mut inner = pair.into_inner().next().unwrap();
+            let inner = pair.into_inner().next().unwrap();
             match inner.as_rule() {
                 Rule::DatatypeAnnotationsClause => {
                     annotated_axiom!(
@@ -698,7 +689,7 @@ impl<A: ForIRI> FromPair<A> for ClassFrame<A> {
 
         for pair in pairs {
             debug_assert!(pair.as_rule() == Rule::ClassClause);
-            let mut inner = pair.into_inner().next().unwrap();
+            let inner = pair.into_inner().next().unwrap();
             match inner.as_rule() {
                 Rule::ClassAnnotationsClause => {
                     annotated_axiom!(
@@ -810,7 +801,7 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
 
         for pair in pairs {
             debug_assert!(pair.as_rule() == Rule::ObjectPropertyClause);
-            let mut inner = pair.into_inner().next().unwrap();
+            let inner = pair.into_inner().next().unwrap();
             match inner.as_rule() {
                 Rule::ObjectPropertyAnnotationsClause => {
                     annotated_axiom!(
@@ -948,7 +939,7 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
                                 }
                                 rule => unexpected_rule!(ObjectPropertyExpression, rule),
                             };
-                            InverseObjectProperties(op, frame.entity.clone().into()).into()
+                            InverseObjectProperties(op, frame.entity.clone()).into()
                         }
                     )
                 }
@@ -976,7 +967,7 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
 
 impl<A: ForIRI> FromPair<A> for DataPropertyFrame<A> {
     const RULE: Rule = Rule::DataPropertyFrame;
-    fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
+    fn from_pair_unchecked(_pair: Pair<Rule>, _ctx: &Context<'_, A>) -> Result<Self> {
         unimplemented!()
     }
 }
@@ -991,7 +982,7 @@ impl<A: ForIRI> FromPair<A> for AnnotationPropertyFrame<A> {
 
         for pair in pairs {
             debug_assert!(pair.as_rule() == Rule::AnnotationPropertyClause);
-            let mut inner = pair.into_inner().next().unwrap();
+            let inner = pair.into_inner().next().unwrap();
             match inner.as_rule() {
                 Rule::AnnotationPropertyAnnotationsClause => {
                     annotated_axiom!(
@@ -1057,7 +1048,7 @@ impl<A: ForIRI> FromPair<A> for AnnotationPropertyFrame<A> {
 
 impl<A: ForIRI> FromPair<A> for IndividualFrame<A> {
     const RULE: Rule = Rule::IndividualFrame;
-    fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
+    fn from_pair_unchecked(_pair: Pair<Rule>, _ctx: &Context<'_, A>) -> Result<Self> {
         unimplemented!()
     }
 }
@@ -1067,7 +1058,7 @@ impl<A: ForIRI> FromPair<A> for IndividualFrame<A> {
 impl<A: ForIRI> FromPair<A> for PropertyExpression<A> {
     const RULE: Rule = Rule::PropertyExpression;
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
-        let mut inner = pair.into_inner().next().unwrap();
+        let inner = pair.into_inner().next().unwrap();
         match inner.as_rule() {
             Rule::ObjectPropertyExpression => {
                 FromPair::from_pair(inner, ctx).map(PropertyExpression::ObjectPropertyExpression)
@@ -1084,7 +1075,7 @@ impl<A: ForIRI> FromPair<A> for PropertyExpression<A> {
 impl<A: ForIRI> FromPair<A> for ObjectPropertyExpression<A> {
     const RULE: Rule = Rule::ObjectPropertyExpression;
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
-        let mut inner = pair.into_inner().next().unwrap();
+        let inner = pair.into_inner().next().unwrap();
         match inner.as_rule() {
             Rule::ObjectPropertyIRI => {
                 FromPair::from_pair(inner, ctx).map(ObjectPropertyExpression::ObjectProperty)
@@ -1155,8 +1146,6 @@ impl<A: ForIRI> FromPair<A> for String {
 
 #[cfg(test)]
 mod tests {
-
-    use std::collections::HashSet;
 
     use super::*;
     use crate::parser::OwlManchesterParser;
