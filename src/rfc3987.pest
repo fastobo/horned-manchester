@@ -17,7 +17,7 @@ RFC3987_IriRelativePart = ${ ("//" ~ RFC3987_IriAuthority ~ RFC3987_IriPathAbemp
 RFC3987_IriAuthority = ${ (RFC3987_IriUserInfo ~ "@")? ~ RFC3987_IriHost ~ (":" ~ RFC3987_IriPort)?}
 RFC3987_IriUserInfo  = ${ (RFC3987_IriUnreserved | RFC3987_IriPctEncoded | RFC3987_IriSubDelims | ":")* }
 RFC3987_IriHost      = ${ RFC3987_IriIpLiteral | RFC3987_IriIpv4Address | RFC3987_IriRegName }
-RFC3987_IriRegName   = ${ (RFC3987_IriUnreserved | RFC3987_IriPctEncoded | RFC3987_IriSubDelims)* }
+RFC3987_IriRegName   = @{ (RFC3987_IriUnreserved | RFC3987_IriPctEncoded | RFC3987_IriSubDelims)* }
 
 RFC3987_IriPath         = ${RFC3987_IriPathAbempty | RFC3987_IriPathAbsolute | RFC3987_IriPathNoScheme | RFC3987_IriPathRootless | RFC3987_IriPathEmpty}
 RFC3987_IriPathAbempty  = ${ ("/" ~ RFC3987_IriSegment)+ }
@@ -50,7 +50,7 @@ RFC3987_IriDecOctet   = ${
   | ("25" ~ ('0' .. '5'))
 }
 
-RFC3987_IriIpChar = ${ RFC3987_IriUnreserved | RFC3987_IriPctEncoded | RFC3987_IriSubDelims | ":" | "@" }
+RFC3987_IriIpChar = @{ RFC3987_IriUnreserved | RFC3987_IriPctEncoded | RFC3987_IriSubDelims | ":" | "@" }
 RFC3987_IriIpLiteral = ${ "[" ~ (RFC3987_IriIpv6Address ~ RFC3987_IriIpvFutureAddress)* ~ "]" }
 
 RFC3987_IriIpv6H16  = ${ ASCII_HEX_DIGIT{1,4} }

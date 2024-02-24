@@ -12,8 +12,8 @@ categories = ["science", "parser-implementations"]
 exclude = ["tests/data/*"]
 
 [dependencies]
-pest = "2.5.1"
-pest_derive = "2.5.1"
+pest = "2.7"
+pest_derive = "2.7"
 horned-owl = "0.14.0"
 curie = "0.1.1"
 enum_meta = "0.6.0"
