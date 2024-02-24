@@ -26,7 +26,7 @@ use horned_owl::model::Build;
 use horned_owl::model::Ontology;
 use horned_owl::model::MutableOntology;
 
-use self::from_pair::FromPair;
+pub use self::from_pair::FromPair;
 pub use self::error::Error;
 pub use self::error::Result;
 pub use self::from_omn::FromManchester;

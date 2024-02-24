@@ -445,4 +445,9 @@ mod tests {
         assert_parse!(Rule::Restriction, r#"hasFirstName exactly 1"#);
         assert_parse!(Rule::Restriction, r#"hasFirstName only string[minLength 1]"#);
     }
+
+    #[test]
+    fn string_literal_with_language() {
+        assert_parse!(Rule::StringLiteralWithLanguage, r#""Agronomy Ontology"@en"#);
+    }
 }
