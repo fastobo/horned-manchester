@@ -131,6 +131,7 @@ IndividualList = { Individual ~ (COMMA ~ Individual)* }
 AnnotationAnnotatedList                   = { Annotations? ~ Annotation                   ~ (COMMA ~ Annotations? ~ Annotation)* }
 DescriptionAnnotatedList                  = { Annotations? ~ Description                  ~ (COMMA ~ Annotations? ~ Description)* }
 ObjectPropertyCharacteristicAnnotatedList = { Annotations? ~ ObjectPropertyCharacteristic ~ (COMMA ~ Annotations? ~ ObjectPropertyCharacteristic)* }
+DataPropertyCharacteristicAnnotatedList   = { Annotations? ~ DataPropertyCharacteristic   ~ (COMMA ~ Annotations? ~ ObjectPropertyCharacteristic)* }
 ObjectPropertyExpressionAnnotatedList     = { Annotations? ~ ObjectPropertyExpression     ~ (COMMA ~ Annotations? ~ ObjectPropertyExpression)* }
 DataPropertyExpressionAnnotatedList       = { Annotations? ~ DataPropertyExpression       ~ (COMMA ~ Annotations? ~ DataPropertyExpression)* }
 IRIAnnotatedList                          = { Annotations? ~ IRI                          ~ (COMMA ~ Annotations? ~ IRI)* }
@@ -160,7 +161,11 @@ Digit              = @{ ASCII_DIGIT }
 Zero               = @{ "0" }
 
 ClassIRI              = { IRI }
-Datatype              = { "integer" | "decimal" | "float" | "string" | DatatypeIRI }
+Datatype              = { IntegerDatatype | DecimalDatatype | FloatDatatype | StringDatatype | DatatypeIRI }
+IntegerDatatype       = { "integer" }
+DecimalDatatype       = { "decimal" }
+FloatDatatype         = { "float"   }
+StringDatatype        = { "string"  }
 DatatypeIRI           = { IRI }
 ObjectPropertyIRI     = { IRI }
 DataPropertyIRI       = { IRI }
@@ -258,11 +263,20 @@ Atomic = {
 
 // 2.5 Frames and Miscellaneous
 
-DatatypeFrame = { 
-    "Datatype:" ~ Datatype
-    ~ Annotations* 
-    ~ ( LIT_EQUIVALENT_TO ~ COLON ~ Annotations? ~ DataRange )?
-    ~ Annotations*
+FunctionalCharacteristic        = { "Functional" }
+InverseFunctionalCharacteristic = { "InverseFunctional" }
+ReflexiveCharacteristic         = { "Reflexive" }
+IrreflexiveCharacteristic       = { "Irreflexive" }
+SymmetricCharacteristic         = { "Symmetric" }
+AsymmetricCharacteristic        = { "Asymmetric" }
+TransitiveCharacteristic        = { "Transitive" }
+
+DatatypeFrame              = { "Datatype:" ~ Datatype ~ DatatypeClause* }
+DatatypeAnnotationsClause  = { "Annotations:" ~ AnnotationAnnotatedList }
+DatatypeEquivalentToClause = { "EquivalentTo:" ~ Annotations? ~ DataRange }
+DatatypeClause = {
+    DatatypeAnnotationsClause
+    | DatatypeEquivalentToClause
 }
 
 ClassFrame                 = { "Class:" ~ ClassIRI ~ ClassClause* }
@@ -303,20 +317,20 @@ ObjectPropertyClause = {
     | ObjectPropertySubPropertyChainClause
 }
 ObjectPropertyCharacteristic = {
-    "Functional"
-    | "InverseFunctional"
-    | "Reflexive"
-    | "Irreflexive"
-    | "Symmetric"
-    | "Asymmetric"
-    | "Transitive"
+    FunctionalCharacteristic
+    | InverseFunctionalCharacteristic
+    | ReflexiveCharacteristic
+    | IrreflexiveCharacteristic
+    | SymmetricCharacteristic
+    | AsymmetricCharacteristic
+    | TransitiveCharacteristic
 }
 
 DataPropertyFrame = { (LIT_DATA_PROPERTY ~ COLON ~ DataPropertyIRI) ~ DataPropertyClause* }
 DataPropertyAnnotationsClause = { "Annotations:" ~ AnnotationAnnotatedList }
 DataPropertyDomainClause = { "Domain:" ~ DescriptionAnnotatedList }
 DataPropertyRangeClause = { "Range:" ~ DescriptionAnnotatedList }
-DataPropertyCharacteristicsClause = { "Characteristics:" ~ Annotations? ~ "Functional" }
+DataPropertyCharacteristicsClause = { "Characteristics:" ~ DataPropertyCharacteristicAnnotatedList }
 DataPropertySubPropertyOfClause = { "SubPropertyOf:" ~ DataPropertyExpressionAnnotatedList }
 DataPropertyEquivalentToClause = { "EquivalentTo:" ~ DataPropertyExpressionAnnotatedList }
 DataPropertyDisjointWithClause = { "DisjointWith:" ~ DataPropertyExpressionAnnotatedList }
@@ -328,6 +342,9 @@ DataPropertyClause = {
     | DataPropertySubPropertyOfClause
     | DataPropertyEquivalentToClause
     | DataPropertyDisjointWithClause
+}
+DataPropertyCharacteristic = {
+    FunctionalCharacteristic
 }
 
 AnnotationPropertyFrame               = { "AnnotationProperty:" ~ AnnotationPropertyIRI ~ AnnotationPropertyClause* }

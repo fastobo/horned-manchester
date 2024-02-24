@@ -258,15 +258,19 @@ impl<A: ForIRI> FromPair<A> for ClassExpression<A> {
 impl<A: ForIRI> FromPair<A> for Datatype<A> {
     const RULE: Rule = Rule::Datatype;
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
-        match pair.as_str() {
-            "integer" => { unimplemented!() }
-            "decimal" => { unimplemented!() }
-            "float" => { unimplemented!() }
-            "string" => { unimplemented!() }
-            _ => {
-                let mut inner = pair.into_inner();
-                unimplemented!()
+        let inner = pair.into_inner().next().unwrap();
+        match inner.as_rule() {
+            Rule::IntegerDatatype => { 
+                unimplemented!() 
             }
+            Rule::DecimalDatatype => { unimplemented!() }
+            Rule::FloatDatatype => { unimplemented!() }
+            Rule::StringDatatype => { unimplemented!() }
+            Rule::DatatypeIRI => {
+                FromPair::from_pair(inner.into_inner().next().unwrap(), ctx)
+                    .map(Datatype)
+            }
+            rule => unreachable!("unexpected rule in ClassFrame::from_pair: {:?}", rule)
         }
     }
 }
@@ -495,7 +499,22 @@ where
 impl<A: ForIRI> FromPair<A> for DatatypeFrame<A> {
     const RULE: Rule = Rule::DatatypeFrame;
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
-        unimplemented!()
+        let mut pairs = pair.into_inner();
+
+        let datatype = Datatype::from_pair(pairs.next().unwrap(), ctx)?;
+        let mut frame = DatatypeFrame::from(datatype);
+
+        for pair in pairs {
+            debug_assert!(pair.as_rule() == Rule::DatatypeClause);
+            let mut inner = pair.into_inner().next().unwrap();
+            match inner.as_rule() {
+                Rule::DatatypeAnnotationsClause => unimplemented!(),
+                Rule::DatatypeEquivalentToClause => unimplemented!(),
+                rule => unreachable!("unexpected rule in ClassFrame::from_pair: {:?}", rule),
+            }
+        }
+
+        Ok(frame)
     }
 }
 
@@ -632,8 +651,15 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
                         );
                     }
                 }
-
-                rule => unreachable!("unexpected rule in ClassFrame::from_pair: {:?}", rule),
+                Rule::ObjectPropertyDomainClause => unimplemented!(),
+                Rule::ObjectPropertyRangeClause => unimplemented!(),
+                Rule::ObjectPropertyCharacteristicsClause => unimplemented!(),
+                Rule::ObjectPropertySubPropertyOfClause => unimplemented!(),
+                Rule::ObjectPropertyEquivalentToClause => unimplemented!(),
+                Rule::ObjectPropertyDisjointWithClause => unimplemented!(),
+                Rule::ObjectPropertyInverseOfClause => unimplemented!(),
+                Rule::ObjectPropertySubPropertyOfClause => unimplemented!(),
+                rule => unreachable!("unexpected rule in ObjectPropertyFrame::from_pair: {:?}", rule),
             }
         }
 
