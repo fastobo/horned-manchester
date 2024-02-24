@@ -3,7 +3,16 @@ use std::collections::BTreeSet;
 use curie::Curie;
 use curie::PrefixMapping;
 use horned_owl::model::*;
+use horned_owl::ontology::iri_mapped::IRIMappedOntology;
+use horned_owl::ontology::axiom_mapped::AxiomMappedOntology;
+use horned_owl::io::rdf::reader::RDFOntology;
 use horned_owl::ontology::set::SetOntology;
+use horned_owl::ontology::indexed::OneIndexedOntology;
+use horned_owl::ontology::indexed::TwoIndexedOntology;
+use horned_owl::ontology::indexed::ThreeIndexedOntology;
+use horned_owl::ontology::indexed::FourIndexedOntology;
+use horned_owl::ontology::indexed::OntologyIndex;
+use horned_owl::ontology::indexed::ForIndex;
 use pest::iterators::Pair;
 use pest::iterators::Pairs;
 
@@ -18,6 +27,26 @@ use crate::frames::ObjectPropertyFrame;
 use crate::frames::AnnotationPropertyFrame;
 use crate::frames::IndividualFrame;
 use crate::Context;
+
+// ---------------------------------------------------------------------------
+
+/// A sealed trait for ontology types that can be parsed from Manchester syntax.
+///
+/// This is needed  `rustc` complains that I cannot implement
+/// `FromPair<A> for O where O: Ontology + MutableOntology + Default` because
+/// of future implementations but it's  likely not needed once the parser is 
+/// merged into the `horned-owl` crate.
+trait ParseableOntology {}
+
+impl<A: ForIRI> ParseableOntology for SetOntology<A> {}
+impl<A: ForIRI, AA: ForIndex<A>> ParseableOntology for RDFOntology<A, AA> {}
+impl<A: ForIRI, AA: ForIndex<A>> ParseableOntology for AxiomMappedOntology<A, AA> {}
+impl<A: ForIRI, AA: ForIndex<A>> ParseableOntology for IRIMappedOntology<A, AA> {}
+impl<A: ForIRI, AA: ForIndex<A>, I: OntologyIndex<A, AA>> ParseableOntology for OneIndexedOntology<A, AA, I> {}
+impl<A: ForIRI, AA: ForIndex<A>, I: OntologyIndex<A, AA>, J: OntologyIndex<A, AA>> ParseableOntology for TwoIndexedOntology<A, AA, I, J> {}
+impl<A: ForIRI, AA: ForIndex<A>, I: OntologyIndex<A, AA>, J: OntologyIndex<A, AA>, K: OntologyIndex<A, AA>> ParseableOntology for ThreeIndexedOntology<A, AA, I, J, K> {}
+impl<A: ForIRI, AA: ForIndex<A>, I: OntologyIndex<A, AA>, J: OntologyIndex<A, AA>, K: OntologyIndex<A, AA>, L: OntologyIndex<A, AA>> ParseableOntology for FourIndexedOntology<A, AA, I, J, K, L> {}
+
 
 // ---------------------------------------------------------------------------
 
@@ -373,12 +402,16 @@ impl<A: ForIRI> FromPair<A> for OntologyID<A> {
     }
 }
 
-impl<A: ForIRI> FromPair<A> for SetOntology<A> {
+impl<A, O> FromPair<A> for O
+where
+    A: ForIRI, 
+    O: ParseableOntology + Ontology<A> + MutableOntology<A> + Default
+{
     const RULE: Rule = Rule::Ontology;
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
         let mut pairs = pair.into_inner().peekable();
 
-        let mut ontology = SetOntology::default();
+        let mut ontology = O::default();
         let mut ontology_id = ontology.mut_id();
 
         // Parse ontology IRI and version IRI if any
