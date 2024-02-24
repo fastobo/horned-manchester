@@ -2,30 +2,30 @@ use std::collections::BTreeSet;
 
 use curie::Curie;
 use curie::PrefixMapping;
-use horned_owl::model::*;
-use horned_owl::ontology::iri_mapped::IRIMappedOntology;
-use horned_owl::ontology::axiom_mapped::AxiomMappedOntology;
 use horned_owl::io::rdf::reader::RDFOntology;
-use horned_owl::ontology::set::SetOntology;
-use horned_owl::ontology::indexed::OneIndexedOntology;
-use horned_owl::ontology::indexed::TwoIndexedOntology;
-use horned_owl::ontology::indexed::ThreeIndexedOntology;
-use horned_owl::ontology::indexed::FourIndexedOntology;
-use horned_owl::ontology::indexed::OntologyIndex;
+use horned_owl::model::*;
+use horned_owl::ontology::axiom_mapped::AxiomMappedOntology;
 use horned_owl::ontology::indexed::ForIndex;
+use horned_owl::ontology::indexed::FourIndexedOntology;
+use horned_owl::ontology::indexed::OneIndexedOntology;
+use horned_owl::ontology::indexed::OntologyIndex;
+use horned_owl::ontology::indexed::ThreeIndexedOntology;
+use horned_owl::ontology::indexed::TwoIndexedOntology;
+use horned_owl::ontology::iri_mapped::IRIMappedOntology;
+use horned_owl::ontology::set::SetOntology;
 use pest::iterators::Pair;
 use pest::iterators::Pairs;
 
 use crate::error::Error;
 use crate::error::Result;
-use crate::parser::Rule;
-use crate::frames::Frame;
-use crate::frames::ClassFrame;
-use crate::frames::DatatypeFrame;
-use crate::frames::DataPropertyFrame;
-use crate::frames::ObjectPropertyFrame;
 use crate::frames::AnnotationPropertyFrame;
+use crate::frames::ClassFrame;
+use crate::frames::DataPropertyFrame;
+use crate::frames::DatatypeFrame;
+use crate::frames::Frame;
 use crate::frames::IndividualFrame;
+use crate::frames::ObjectPropertyFrame;
+use crate::parser::Rule;
 use crate::Context;
 
 // ---------------------------------------------------------------------------
@@ -59,8 +59,12 @@ pub trait FromPair<A: ForIRI>: Sized {
 
 macro_rules! unexpected_rule {
     ($type:ident, $rule:expr) => {
-        unreachable!("unexpected rule in {}::from_pair: {:?}", stringify!($type), $rule)
-    }
+        unreachable!(
+            "unexpected rule in {}::from_pair: {:?}",
+            stringify!($type),
+            $rule
+        )
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -102,7 +106,11 @@ impl_vector!(A, Vec<Individual<A>>, Rule::IndividualList);
 // ---------------------------------------------------------------------------
 
 /// Parse optional `Annotations` into a `BTreeSet` to use with `AnnotatedAxioms`.
-fn axiom_annotations<'a, A: ForIRI>(pair: &mut Pair<'a, Rule>, pairs: &mut Pairs<'a, Rule>, ctx: &Context<'_, A>) -> Result<BTreeSet<Annotation<A>>> {
+fn axiom_annotations<'a, A: ForIRI>(
+    pair: &mut Pair<'a, Rule>,
+    pairs: &mut Pairs<'a, Rule>,
+    ctx: &Context<'_, A>,
+) -> Result<BTreeSet<Annotation<A>>> {
     if pair.as_rule() == Rule::Annotations {
         let p = std::mem::replace(pair, pairs.next().unwrap());
         let anns = BTreeSet::from_pair(p.into_inner().next().unwrap(), ctx)?;
@@ -162,7 +170,7 @@ impl<A: ForIRI> FromPair<A> for BTreeSet<Annotation<A>> {
                 Rule::Annotations => {
                     unimplemented!("nested annotation lists not supported")
                 }
-                rule => unexpected_rule!(BTreeSet, rule)
+                rule => unexpected_rule!(BTreeSet, rule),
             }
         }
 
@@ -172,9 +180,12 @@ impl<A: ForIRI> FromPair<A> for BTreeSet<Annotation<A>> {
 
 // ---------------------------------------------------------------------------
 
-fn from_restriction_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<ClassExpression<A>> {
+fn from_restriction_pair<A: ForIRI>(
+    pair: Pair<Rule>,
+    ctx: &Context<'_, A>,
+) -> Result<ClassExpression<A>> {
     debug_assert!(pair.as_rule() == Rule::Restriction);
-    
+
     let inner = pair.into_inner().next().unwrap();
     match inner.as_rule() {
         Rule::DataSomeValuesFromRestriction => {
@@ -223,7 +234,10 @@ fn from_restriction_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> R
     }
 }
 
-fn from_atomic_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<ClassExpression<A>> {
+fn from_atomic_pair<A: ForIRI>(
+    pair: Pair<Rule>,
+    ctx: &Context<'_, A>,
+) -> Result<ClassExpression<A>> {
     debug_assert!(pair.as_rule() == Rule::Atomic);
 
     let mut inner = pair.into_inner().next().unwrap();
@@ -235,7 +249,10 @@ fn from_atomic_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result
     }
 }
 
-fn from_primary_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<ClassExpression<A>> {
+fn from_primary_pair<A: ForIRI>(
+    pair: Pair<Rule>,
+    ctx: &Context<'_, A>,
+) -> Result<ClassExpression<A>> {
     debug_assert!(pair.as_rule() == Rule::Primary);
 
     let mut inner = pair.into_inner();
@@ -261,24 +278,30 @@ fn from_primary_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Resul
     }
 }
 
-fn from_conjuction_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<ClassExpression<A>> {
+fn from_conjuction_pair<A: ForIRI>(
+    pair: Pair<Rule>,
+    ctx: &Context<'_, A>,
+) -> Result<ClassExpression<A>> {
     debug_assert!(pair.as_rule() == Rule::Conjuction);
 
     let mut inner = pair.into_inner().peekable();
     match inner.peek().unwrap().as_rule() {
         Rule::ClassIRI => {
             let class = Class::from_pair(inner.next().unwrap(), ctx)?;
-            let mut intersection = vec![ ClassExpression::Class(class) ];
+            let mut intersection = vec![ClassExpression::Class(class)];
             while let Some(pair) = inner.next() {
                 let cexp = if pair.as_rule() == Rule::KEYWORD_NOT {
-                    ClassExpression::ObjectComplementOf(Box::new(from_restriction_pair(inner.next().unwrap(), ctx)?))
+                    ClassExpression::ObjectComplementOf(Box::new(from_restriction_pair(
+                        inner.next().unwrap(),
+                        ctx,
+                    )?))
                 } else {
                     from_restriction_pair(pair, ctx)?
                 };
                 intersection.push(cexp)
-            };
+            }
             Ok(ClassExpression::ObjectIntersectionOf(intersection))
-        },
+        }
         Rule::Primary => {
             let mut primaries = inner
                 .map(|pair| from_primary_pair(pair, ctx))
@@ -303,7 +326,7 @@ impl<A: ForIRI> FromPair<A> for ClassExpression<A> {
             Ok(ClassExpression::ObjectUnionOf(
                 inner
                     .map(|pair| from_conjuction_pair(pair, ctx))
-                    .collect::<Result<_>>()?
+                    .collect::<Result<_>>()?,
             ))
         }
     }
@@ -311,7 +334,10 @@ impl<A: ForIRI> FromPair<A> for ClassExpression<A> {
 
 // ---------------------------------------------------------------------------
 
-fn from_data_conjuction_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<DataRange<A>> {
+fn from_data_conjuction_pair<A: ForIRI>(
+    pair: Pair<Rule>,
+    ctx: &Context<'_, A>,
+) -> Result<DataRange<A>> {
     debug_assert!(pair.as_rule() == Rule::DataRange);
 
     let mut ranges = pair
@@ -339,7 +365,10 @@ fn from_data_range_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Re
     }
 }
 
-fn from_data_atomic_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<DataRange<A>> {
+fn from_data_atomic_pair<A: ForIRI>(
+    pair: Pair<Rule>,
+    ctx: &Context<'_, A>,
+) -> Result<DataRange<A>> {
     debug_assert!(pair.as_rule() == Rule::DataAtomic);
 
     let inner = pair.into_inner().next().unwrap();
@@ -354,10 +383,9 @@ fn from_data_atomic_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> R
             let literals = FromPair::from_pair(inner.into_inner().next().unwrap(), ctx)?;
             Ok(DataRange::DataOneOf(literals))
         }
-        rule => unexpected_rule!(DataRange, rule)
+        rule => unexpected_rule!(DataRange, rule),
     }
 }
-
 
 impl<A: ForIRI> FromPair<A> for DataRange<A> {
     const RULE: Rule = Rule::DataPrimary;
@@ -367,13 +395,12 @@ impl<A: ForIRI> FromPair<A> for DataRange<A> {
             Rule::DataAtomic => from_data_atomic_pair(inner, ctx),
             Rule::DataAtomicComplement => {
                 let pair = inner.into_inner().next().unwrap();
-                Self::from_pair(pair, ctx) 
+                Self::from_pair(pair, ctx)
                     .map(Box::new)
                     .map(DataRange::DataComplementOf)
             }
-            rule => unexpected_rule!(DataRange, rule)
+            rule => unexpected_rule!(DataRange, rule),
         }
-
     }
 }
 
@@ -384,17 +411,22 @@ impl<A: ForIRI> FromPair<A> for Datatype<A> {
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
         let inner = pair.into_inner().next().unwrap();
         match inner.as_rule() {
-            Rule::IntegerDatatype => { 
-                unimplemented!() 
+            Rule::IntegerDatatype => {
+                unimplemented!()
             }
-            Rule::DecimalDatatype => { unimplemented!() }
-            Rule::FloatDatatype => { unimplemented!() }
-            Rule::StringDatatype => { unimplemented!() }
+            Rule::DecimalDatatype => {
+                unimplemented!()
+            }
+            Rule::FloatDatatype => {
+                unimplemented!()
+            }
+            Rule::StringDatatype => {
+                unimplemented!()
+            }
             Rule::DatatypeIRI => {
-                FromPair::from_pair(inner.into_inner().next().unwrap(), ctx)
-                    .map(Datatype)
+                FromPair::from_pair(inner.into_inner().next().unwrap(), ctx).map(Datatype)
             }
-            rule => unexpected_rule!(ClassFrame, rule)
+            rule => unexpected_rule!(ClassFrame, rule),
         }
     }
 }
@@ -406,12 +438,8 @@ impl<A: ForIRI> FromPair<A> for Individual<A> {
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
         let inner = pair.into_inner().next().unwrap();
         match inner.as_rule() {
-            Rule::IndividualIRI => {
-                FromPair::from_pair(inner, ctx).map(Individual::Named)
-            }
-            Rule::NodeID => {
-                FromPair::from_pair(inner, ctx).map(Individual::Anonymous)
-            }
+            Rule::IndividualIRI => FromPair::from_pair(inner, ctx).map(Individual::Named),
+            Rule::NodeID => FromPair::from_pair(inner, ctx).map(Individual::Anonymous),
             rule => unexpected_rule!(Individual, rule),
         }
     }
@@ -471,7 +499,10 @@ impl<A: ForIRI> FromPair<A> for Literal<A> {
                 } else {
                     return Err(Error::from(curie::ExpansionError::Invalid));
                 };
-                Ok(Literal::Datatype { literal, datatype_iri })
+                Ok(Literal::Datatype {
+                    literal,
+                    datatype_iri,
+                })
             }
             rule => unexpected_rule!(Literal, rule),
         }
@@ -504,30 +535,40 @@ impl<A: ForIRI> FromPair<A> for SetOntology<A> {
         let mut ontology_id = ontology.mut_id();
 
         // Parse ontology IRI and version IRI if any
-        if pairs.peek().map(|p| p.as_rule() == Rule::OntologyID).unwrap_or(false) {
+        if pairs
+            .peek()
+            .map(|p| p.as_rule() == Rule::OntologyID)
+            .unwrap_or(false)
+        {
             let pair = pairs.next().unwrap();
             *ontology_id = FromPair::<A>::from_pair(pair, ctx)?;
         }
 
         // Process imports
-        while pairs.peek().map(|p| p.as_rule() == Rule::Import).unwrap_or(false) {
+        while pairs
+            .peek()
+            .map(|p| p.as_rule() == Rule::Import)
+            .unwrap_or(false)
+        {
             let pair = pairs.next().unwrap();
             ontology.insert(Import::from_pair(pair.into_inner().next().unwrap(), ctx)?);
         }
 
         // Process ontology annotations
-        while pairs.peek().map(|p| p.as_rule() == Rule::Annotations).unwrap_or(false) {
+        while pairs
+            .peek()
+            .map(|p| p.as_rule() == Rule::Annotations)
+            .unwrap_or(false)
+        {
             let mut annotations = pairs.next().unwrap().into_inner();
             let mut annotated_list = annotations.next().unwrap().into_inner();
             while let Some(mut pair) = annotated_list.next() {
                 let anns = axiom_annotations(&mut pair, &mut annotated_list, ctx)?;
                 let annotation = Annotation::from_pair(pair, ctx)?;
-                ontology.insert(
-                    AnnotatedAxiom {
-                        axiom: Axiom::OntologyAnnotation(OntologyAnnotation(annotation)),
-                        ann: anns,
-                    }
-                );
+                ontology.insert(AnnotatedAxiom {
+                    axiom: Axiom::OntologyAnnotation(OntologyAnnotation(annotation)),
+                    ann: anns,
+                });
             }
         }
 
@@ -538,9 +579,13 @@ impl<A: ForIRI> FromPair<A> for SetOntology<A> {
             let axioms = match inner.as_rule() {
                 Rule::DatatypeFrame => DatatypeFrame::from_pair(inner, ctx)?.into_axioms(),
                 Rule::ClassFrame => ClassFrame::from_pair(inner, ctx)?.into_axioms(),
-                Rule::ObjectPropertyFrame => ObjectPropertyFrame::from_pair(inner, ctx)?.into_axioms(),
+                Rule::ObjectPropertyFrame => {
+                    ObjectPropertyFrame::from_pair(inner, ctx)?.into_axioms()
+                }
                 Rule::DataPropertyFrame => DataPropertyFrame::from_pair(inner, ctx)?.into_axioms(),
-                Rule::AnnotationPropertyFrame => AnnotationPropertyFrame::from_pair(inner, ctx)?.into_axioms(),
+                Rule::AnnotationPropertyFrame => {
+                    AnnotationPropertyFrame::from_pair(inner, ctx)?.into_axioms()
+                }
                 Rule::IndividualFrame => IndividualFrame::from_pair(inner, ctx)?.into_axioms(),
                 rule => unexpected_rule!(ClassFrame, rule),
             };
@@ -555,8 +600,8 @@ impl<A: ForIRI> FromPair<A> for SetOntology<A> {
 
 impl<A, O> FromPair<A> for (O, PrefixMapping)
 where
-    A: ForIRI, 
-    O: Ontology<A> + MutableOntology<A> + FromPair<A>
+    A: ForIRI,
+    O: Ontology<A> + MutableOntology<A> + FromPair<A>,
 {
     const RULE: Rule = Rule::OntologyDocument;
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
@@ -596,7 +641,7 @@ macro_rules! annotated_axiom {
             let axiom = $axiom;
             $frame.axioms.push(AnnotatedAxiom { axiom, ann });
         }
-    }}
+    }};
 }
 
 impl<A: ForIRI> FromPair<A> for DatatypeFrame<A> {
@@ -612,12 +657,18 @@ impl<A: ForIRI> FromPair<A> for DatatypeFrame<A> {
             let mut inner = pair.into_inner().next().unwrap();
             match inner.as_rule() {
                 Rule::DatatypeAnnotationsClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        let ann = FromPair::from_pair(pair, ctx)?;
-                        let subject = AnnotationSubject::IRI(frame.entity.0.clone());
-                        AnnotationAssertion { subject, ann }.into()
-                    })
-                },
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let ann = FromPair::from_pair(pair, ctx)?;
+                            let subject = AnnotationSubject::IRI(frame.entity.0.clone());
+                            AnnotationAssertion { subject, ann }.into()
+                        }
+                    )
+                }
                 Rule::DatatypeEquivalentToClause => {
                     let mut pairs = inner.into_inner();
                     let mut pair = pairs.next().unwrap();
@@ -625,10 +676,10 @@ impl<A: ForIRI> FromPair<A> for DatatypeFrame<A> {
 
                     let range = from_data_range_pair(pair, ctx)?;
                     let kind = frame.entity.clone();
-                    
+
                     let axiom = DatatypeDefinition { kind, range }.into();
                     frame.axioms.push(AnnotatedAxiom { ann, axiom });
-                },
+                }
                 rule => unexpected_rule!(ClassFrame, rule),
             }
         }
@@ -650,41 +701,69 @@ impl<A: ForIRI> FromPair<A> for ClassFrame<A> {
             let mut inner = pair.into_inner().next().unwrap();
             match inner.as_rule() {
                 Rule::ClassAnnotationsClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        let ann = FromPair::from_pair(pair, ctx)?;
-                        let subject = AnnotationSubject::IRI(frame.entity.0.clone());
-                        AnnotationAssertion { subject, ann }.into()
-                    })
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let ann = FromPair::from_pair(pair, ctx)?;
+                            let subject = AnnotationSubject::IRI(frame.entity.0.clone());
+                            AnnotationAssertion { subject, ann }.into()
+                        }
+                    )
                 }
                 Rule::ClassSubClassOfClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        SubClassOf {
-                            sup: ClassExpression::from_pair(pair, ctx)?,
-                            sub: ClassExpression::Class(frame.entity.clone()),
-                        }.into()
-                    })
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            SubClassOf {
+                                sup: ClassExpression::from_pair(pair, ctx)?,
+                                sub: ClassExpression::Class(frame.entity.clone()),
+                            }
+                            .into()
+                        }
+                    )
                 }
                 Rule::ClassEquivalentToClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        EquivalentClasses(vec![
-                            ClassExpression::Class(frame.entity.clone()),
-                            ClassExpression::from_pair(pair, ctx)?,
-                        ]).into()
-                    })
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            EquivalentClasses(vec![
+                                ClassExpression::Class(frame.entity.clone()),
+                                ClassExpression::from_pair(pair, ctx)?,
+                            ])
+                            .into()
+                        }
+                    )
                 }
                 Rule::ClassDisjointWithClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        DisjointClasses(vec![
-                            ClassExpression::Class(frame.entity.clone()),
-                            ClassExpression::from_pair(pair, ctx)?,
-                        ]).into()
-                    })
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            DisjointClasses(vec![
+                                ClassExpression::Class(frame.entity.clone()),
+                                ClassExpression::from_pair(pair, ctx)?,
+                            ])
+                            .into()
+                        }
+                    )
                 }
                 Rule::ClassDisjointUnionOfClause => {
                     let mut value = inner.into_inner();
                     let mut pair = value.next().unwrap();
                     let ann = axiom_annotations(&mut pair, &mut value, ctx)?;
-                    let descriptions = pair.into_inner()
+                    let descriptions = pair
+                        .into_inner()
                         .map(|pair| ClassExpression::from_pair(pair, ctx))
                         .collect::<Result<Vec<_>>>()?;
                     let axiom = DisjointUnion(frame.entity.clone(), descriptions).into();
@@ -701,16 +780,16 @@ impl<A: ForIRI> FromPair<A> for ClassFrame<A> {
                     // } else {
                     //     annotations = BTreeSet::new();
                     // }
-                        // let has_key = HasKey {
-                        //     ce: ClassExpression::Class(frame.class.clone()),
-                        //     vpe: ClassExpression::from_pair(pair, ctx)?,
-                        // ]);
-                        // frame.axioms.push(
-                        //     AnnotatedAxiom {
-                        //         axiom: Axiom::DisjointClasses(disjoint_classes),
-                        //         ann: annotations,
-                        //     }
-                        // );
+                    // let has_key = HasKey {
+                    //     ce: ClassExpression::Class(frame.class.clone()),
+                    //     vpe: ClassExpression::from_pair(pair, ctx)?,
+                    // ]);
+                    // frame.axioms.push(
+                    //     AnnotatedAxiom {
+                    //         axiom: Axiom::DisjointClasses(disjoint_classes),
+                    //         ann: annotations,
+                    //     }
+                    // );
                     unimplemented!()
                 }
                 rule => unexpected_rule!(ClassFrame, rule),
@@ -734,94 +813,159 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
             let mut inner = pair.into_inner().next().unwrap();
             match inner.as_rule() {
                 Rule::ObjectPropertyAnnotationsClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        let ann = FromPair::from_pair(pair, ctx)?;
-                        let subject = AnnotationSubject::IRI(frame.entity.0.clone());
-                        AnnotationAssertion { subject, ann }.into()
-                    })
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let ann = FromPair::from_pair(pair, ctx)?;
+                            let subject = AnnotationSubject::IRI(frame.entity.0.clone());
+                            AnnotationAssertion { subject, ann }.into()
+                        }
+                    )
                 }
                 Rule::ObjectPropertyDomainClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        let ce = FromPair::from_pair(pair, ctx)?;
-                        let ope = frame.entity.clone().into();
-                        ObjectPropertyDomain { ope, ce }.into()
-                    })
-                },
-                Rule::ObjectPropertyRangeClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        let ce = FromPair::from_pair(pair, ctx)?;
-                        let ope = frame.entity.clone().into();
-                        ObjectPropertyRange { ope, ce }.into()
-                    })
-                },
-                Rule::ObjectPropertyCharacteristicsClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        let op = ObjectPropertyExpression::ObjectProperty(frame.entity.clone());
-                        match pair.into_inner().next().unwrap().as_rule() {
-                            Rule::FunctionalCharacteristic => FunctionalObjectProperty(op).into(),
-                            Rule::InverseFunctionalCharacteristic => InverseFunctionalObjectProperty(op).into(),
-                            Rule::ReflexiveCharacteristic => ReflexiveObjectProperty(op).into(),
-                            Rule::IrreflexiveCharacteristic => IrreflexiveObjectProperty(op).into(),
-                            Rule::SymmetricCharacteristic => SymmetricObjectProperty(op).into(),
-                            Rule::AsymmetricCharacteristic => AsymmetricObjectProperty(op).into(),
-                            Rule::TransitiveCharacteristic => TransitiveObjectProperty(op).into(),
-                            rule => unexpected_rule!(ObjectPropertyFrame, rule)
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let ce = FromPair::from_pair(pair, ctx)?;
+                            let ope = frame.entity.clone().into();
+                            ObjectPropertyDomain { ope, ce }.into()
                         }
-                    })
+                    )
+                }
+                Rule::ObjectPropertyRangeClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let ce = FromPair::from_pair(pair, ctx)?;
+                            let ope = frame.entity.clone().into();
+                            ObjectPropertyRange { ope, ce }.into()
+                        }
+                    )
+                }
+                Rule::ObjectPropertyCharacteristicsClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let op = ObjectPropertyExpression::ObjectProperty(frame.entity.clone());
+                            match pair.into_inner().next().unwrap().as_rule() {
+                                Rule::FunctionalCharacteristic => {
+                                    FunctionalObjectProperty(op).into()
+                                }
+                                Rule::InverseFunctionalCharacteristic => {
+                                    InverseFunctionalObjectProperty(op).into()
+                                }
+                                Rule::ReflexiveCharacteristic => ReflexiveObjectProperty(op).into(),
+                                Rule::IrreflexiveCharacteristic => {
+                                    IrreflexiveObjectProperty(op).into()
+                                }
+                                Rule::SymmetricCharacteristic => SymmetricObjectProperty(op).into(),
+                                Rule::AsymmetricCharacteristic => {
+                                    AsymmetricObjectProperty(op).into()
+                                }
+                                Rule::TransitiveCharacteristic => {
+                                    TransitiveObjectProperty(op).into()
+                                }
+                                rule => unexpected_rule!(ObjectPropertyFrame, rule),
+                            }
+                        }
+                    )
                 }
                 Rule::ObjectPropertySubPropertyOfClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        SubObjectPropertyOf {
-                            sup: ObjectPropertyExpression::from_pair(pair, ctx)?,
-                            sub: SubObjectPropertyExpression::ObjectPropertyExpression(frame.entity.clone().into()),
-                        }.into()
-                    })
-                },
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            SubObjectPropertyOf {
+                                sup: ObjectPropertyExpression::from_pair(pair, ctx)?,
+                                sub: SubObjectPropertyExpression::ObjectPropertyExpression(
+                                    frame.entity.clone().into(),
+                                ),
+                            }
+                            .into()
+                        }
+                    )
+                }
                 Rule::ObjectPropertyEquivalentToClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        EquivalentObjectProperties(vec![
-                            ObjectPropertyExpression::ObjectProperty(frame.entity.clone()),
-                            ObjectPropertyExpression::from_pair(pair, ctx)?,
-                        ]).into()
-                    })
-                },
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            EquivalentObjectProperties(vec![
+                                ObjectPropertyExpression::ObjectProperty(frame.entity.clone()),
+                                ObjectPropertyExpression::from_pair(pair, ctx)?,
+                            ])
+                            .into()
+                        }
+                    )
+                }
                 Rule::ObjectPropertyDisjointWithClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        DisjointObjectProperties(vec![
-                            ObjectPropertyExpression::ObjectProperty(frame.entity.clone()),
-                            ObjectPropertyExpression::from_pair(pair, ctx)?,
-                        ]).into()
-                    })
-                },
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            DisjointObjectProperties(vec![
+                                ObjectPropertyExpression::ObjectProperty(frame.entity.clone()),
+                                ObjectPropertyExpression::from_pair(pair, ctx)?,
+                            ])
+                            .into()
+                        }
+                    )
+                }
                 Rule::ObjectPropertyInverseOfClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        let pair = pair.into_inner().next().unwrap();
-                        let op = match pair.as_rule() {
-                            Rule::ObjectPropertyIRI => FromPair::from_pair(pair, ctx)?,
-                            Rule::InverseObjectProperty => {
-                                // FIXME: currently unsupported in `horned-owl`
-                                return Err(Error::custom(
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let pair = pair.into_inner().next().unwrap();
+                            let op = match pair.as_rule() {
+                                Rule::ObjectPropertyIRI => FromPair::from_pair(pair, ctx)?,
+                                Rule::InverseObjectProperty => {
+                                    // FIXME: currently unsupported in `horned-owl`
+                                    return Err(Error::custom(
                                     "InverseOf cannot contain inverse object property expression",
                                     pair
                                 ));
-                            }
-                            rule => unexpected_rule!(ObjectPropertyExpression, rule),
-                        };
-                        InverseObjectProperties(op, frame.entity.clone().into()).into()
-                    })
-                },
+                                }
+                                rule => unexpected_rule!(ObjectPropertyExpression, rule),
+                            };
+                            InverseObjectProperties(op, frame.entity.clone().into()).into()
+                        }
+                    )
+                }
                 Rule::ObjectPropertySubPropertyChainClause => {
                     let mut chainlist = inner.into_inner();
                     let mut pair = chainlist.next().unwrap();
                     let ann = axiom_annotations(&mut pair, &mut chainlist, ctx)?;
-                    let chain = chainlist.map(|pair| FromPair::from_pair(pair, ctx))
+                    let chain = chainlist
+                        .map(|pair| FromPair::from_pair(pair, ctx))
                         .collect::<Result<Vec<_>>>()?;
                     let axiom = SubObjectPropertyOf {
                         sup: frame.entity.clone().into(),
                         sub: SubObjectPropertyExpression::ObjectPropertyChain(chain),
-                    }.into();
-                    frame.axioms.push( AnnotatedAxiom { ann, axiom });
-                },
+                    }
+                    .into();
+                    frame.axioms.push(AnnotatedAxiom { ann, axiom });
+                }
                 rule => unexpected_rule!(ObjectPropertyFrame, rule),
             }
         }
@@ -850,35 +994,60 @@ impl<A: ForIRI> FromPair<A> for AnnotationPropertyFrame<A> {
             let mut inner = pair.into_inner().next().unwrap();
             match inner.as_rule() {
                 Rule::AnnotationPropertyAnnotationsClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        let ann = FromPair::from_pair(pair, ctx)?;
-                        let subject = AnnotationSubject::IRI(frame.entity.0.clone());
-                        AnnotationAssertion { subject, ann }.into()
-                    })
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let ann = FromPair::from_pair(pair, ctx)?;
+                            let subject = AnnotationSubject::IRI(frame.entity.0.clone());
+                            AnnotationAssertion { subject, ann }.into()
+                        }
+                    )
                 }
                 Rule::AnnotationPropertyDomainClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        let iri = FromPair::from_pair(pair, ctx)?;
-                        let ap = frame.entity.clone();
-                        AnnotationPropertyDomain { ap, iri }.into()
-                    })
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let iri = FromPair::from_pair(pair, ctx)?;
+                            let ap = frame.entity.clone();
+                            AnnotationPropertyDomain { ap, iri }.into()
+                        }
+                    )
                 }
                 Rule::AnnotationPropertyRangeClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        let iri = FromPair::from_pair(pair, ctx)?;
-                        let ap = frame.entity.clone();
-                        AnnotationPropertyRange { ap, iri }.into()
-                    })
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let iri = FromPair::from_pair(pair, ctx)?;
+                            let ap = frame.entity.clone();
+                            AnnotationPropertyRange { ap, iri }.into()
+                        }
+                    )
                 }
                 Rule::AnnotationPropertySubPropertyOfClause => {
-                    annotated_axiom!(pair, inner, ctx, frame, axiom = {
-                        SubAnnotationPropertyOf {
-                            sup: AnnotationProperty::from_pair(pair, ctx)?,
-                            sub: frame.entity.clone(),
-                        }.into()
-                    })
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            SubAnnotationPropertyOf {
+                                sup: AnnotationProperty::from_pair(pair, ctx)?,
+                                sub: frame.entity.clone(),
+                            }
+                            .into()
+                        }
+                    )
                 }
-                rule => unexpected_rule!(AnnotationPropertyFrame, rule)
+                rule => unexpected_rule!(AnnotationPropertyFrame, rule),
             }
         }
 
@@ -918,13 +1087,11 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyExpression<A> {
         let mut inner = pair.into_inner().next().unwrap();
         match inner.as_rule() {
             Rule::ObjectPropertyIRI => {
-                FromPair::from_pair(inner, ctx)
-                    .map(ObjectPropertyExpression::ObjectProperty)
+                FromPair::from_pair(inner, ctx).map(ObjectPropertyExpression::ObjectProperty)
             }
             Rule::InverseObjectProperty => {
                 let pair = inner.into_inner().last().unwrap();
-                FromPair::from_pair(pair, ctx)
-                    .map(ObjectPropertyExpression::InverseObjectProperty)
+                FromPair::from_pair(pair, ctx).map(ObjectPropertyExpression::InverseObjectProperty)
             }
             rule => unexpected_rule!(ObjectPropertyExpression, rule),
         }
@@ -984,7 +1151,6 @@ impl<A: ForIRI> FromPair<A> for String {
     }
 }
 
-
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
@@ -1022,8 +1188,12 @@ mod tests {
         let build = Build::new();
         let mut prefixes = PrefixMapping::default();
         prefixes.set_default("http://example.com/owl/families#");
-        prefixes.add_prefix("owl", "http://www.w3.org/2002/07/owl#").unwrap();
-        prefixes.add_prefix("xsd", "http://www.w3.org/2001/XMLSchema#").unwrap();
+        prefixes
+            .add_prefix("owl", "http://www.w3.org/2002/07/owl#")
+            .unwrap();
+        prefixes
+            .add_prefix("xsd", "http://www.w3.org/2001/XMLSchema#")
+            .unwrap();
 
         assert_parse_into!(
             Annotation<String>,
@@ -1033,12 +1203,10 @@ mod tests {
             r#"owl:deprecated true"#,
             Annotation {
                 ap: build.annotation_property("http://www.w3.org/2002/07/owl#deprecated"),
-                av: AnnotationValue::Literal(
-                    Literal::Datatype {
-                        literal: "true".into(),
-                        datatype_iri: build.iri("http://www.w3.org/2001/XMLSchema#boolean"),
-                    }
-                ),
+                av: AnnotationValue::Literal(Literal::Datatype {
+                    literal: "true".into(),
+                    datatype_iri: build.iri("http://www.w3.org/2001/XMLSchema#boolean"),
+                }),
             }
         );
     }
@@ -1048,7 +1216,9 @@ mod tests {
         let build = Build::new();
         let mut prefixes = PrefixMapping::default();
         prefixes.set_default("http://example.com/owl/families#");
-        prefixes.add_prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#").unwrap();
+        prefixes
+            .add_prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+            .unwrap();
 
         assert_parse_into!(
             AnnotationPropertyFrame<String>,
@@ -1060,11 +1230,10 @@ mod tests {
             "#,
             AnnotationPropertyFrame::with_axioms(
                 build.annotation_property("http://purl.obolibrary.org/obo/IAO_0000115"),
-                vec![
-                    DeclareAnnotationProperty(
-                        build.annotation_property("http://purl.obolibrary.org/obo/IAO_0000115")
-                    ).into()
-                ]
+                vec![DeclareAnnotationProperty(
+                    build.annotation_property("http://purl.obolibrary.org/obo/IAO_0000115")
+                )
+                .into()]
             )
         );
 
@@ -1084,16 +1253,21 @@ mod tests {
                 vec![
                     DeclareAnnotationProperty(
                         build.annotation_property("http://purl.obolibrary.org/obo/IAO_0000115")
-                    ).into(),
+                    )
+                    .into(),
                     AnnotationAssertion {
-                        subject: AnnotationSubject::IRI(build.iri("http://purl.obolibrary.org/obo/IAO_0000115")),
+                        subject: AnnotationSubject::IRI(
+                            build.iri("http://purl.obolibrary.org/obo/IAO_0000115")
+                        ),
                         ann: Annotation {
-                            ap: build.annotation_property("http://www.w3.org/2000/01/rdf-schema#label"),
+                            ap: build
+                                .annotation_property("http://www.w3.org/2000/01/rdf-schema#label"),
                             av: AnnotationValue::Literal(Literal::Simple {
                                 literal: String::from("definition")
                             })
                         }
-                    }.into()
+                    }
+                    .into()
                 ]
             )
         );
@@ -1104,7 +1278,9 @@ mod tests {
         let build = Build::new();
         let mut prefixes = PrefixMapping::default();
         prefixes.set_default("http://example.com/owl/families#");
-        prefixes.add_prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#").unwrap();
+        prefixes
+            .add_prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+            .unwrap();
 
         assert_parse_into!(
             ClassFrame<String>,
@@ -1123,18 +1299,20 @@ mod tests {
             ClassFrame::with_axioms(
                 build.class("http://purl.obolibrary.org/obo/APO_0000098"),
                 vec![
-                    DeclareClass(
-                        build.class("http://purl.obolibrary.org/obo/APO_0000098"),
-                    ).into(),
+                    DeclareClass(build.class("http://purl.obolibrary.org/obo/APO_0000098"),).into(),
                     AnnotationAssertion {
-                        subject: AnnotationSubject::IRI(build.iri("http://purl.obolibrary.org/obo/APO_0000098")),
+                        subject: AnnotationSubject::IRI(
+                            build.iri("http://purl.obolibrary.org/obo/APO_0000098")
+                        ),
                         ann: Annotation {
-                            ap: build.annotation_property("http://www.w3.org/2000/01/rdf-schema#label"),
+                            ap: build
+                                .annotation_property("http://www.w3.org/2000/01/rdf-schema#label"),
                             av: AnnotationValue::Literal(Literal::Simple {
                                 literal: String::from("utilization of carbon source")
                             })
                         }
-                    }.into(),
+                    }
+                    .into(),
                     SubClassOf {
                         sub: ClassExpression::Class(
                             build.class("http://purl.obolibrary.org/obo/APO_0000098")
@@ -1142,7 +1320,8 @@ mod tests {
                         sup: ClassExpression::Class(
                             build.class("http://purl.obolibrary.org/obo/APO_0000096"),
                         )
-                    }.into(),
+                    }
+                    .into(),
                 ]
             )
         );
@@ -1161,15 +1340,16 @@ mod tests {
             ClassFrame::with_axioms(
                 build.class("http://purl.obolibrary.org/obo/BFO_0000002"),
                 vec![
-                    DeclareClass(
-                        build.class("http://purl.obolibrary.org/obo/BFO_0000002"),
-                    ).into(),
-                    DisjointClasses(
-                        vec![
-                            ClassExpression::Class(build.class("http://purl.obolibrary.org/obo/BFO_0000002")),
-                            ClassExpression::Class(build.class("http://purl.obolibrary.org/obo/BFO_0000003")),
-                        ]
-                    ).into(),
+                    DeclareClass(build.class("http://purl.obolibrary.org/obo/BFO_0000002"),).into(),
+                    DisjointClasses(vec![
+                        ClassExpression::Class(
+                            build.class("http://purl.obolibrary.org/obo/BFO_0000002")
+                        ),
+                        ClassExpression::Class(
+                            build.class("http://purl.obolibrary.org/obo/BFO_0000003")
+                        ),
+                    ])
+                    .into(),
                 ]
             )
         );
@@ -1212,7 +1392,9 @@ mod tests {
         let build = Build::new();
         let mut prefixes = PrefixMapping::default();
         prefixes.set_default("http://example.com/owl/families#");
-        prefixes.add_prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#").unwrap();
+        prefixes
+            .add_prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+            .unwrap();
 
         assert_parse_into!(
             ObjectPropertyExpression<String>,
@@ -1230,7 +1412,9 @@ mod tests {
     fn object_property_frame() {
         let build = Build::new();
         let mut prefixes = PrefixMapping::default();
-        prefixes.add_prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#").unwrap();
+        prefixes
+            .add_prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+            .unwrap();
 
         assert_parse_into!(
             ObjectPropertyFrame<String>,
@@ -1250,25 +1434,35 @@ mod tests {
                 vec![
                     DeclareObjectProperty(
                         build.object_property("http://purl.obolibrary.org/obo/RO_0000052")
-                    ).into(),
+                    )
+                    .into(),
                     AnnotationAssertion {
-                        subject: AnnotationSubject::IRI(build.iri("http://purl.obolibrary.org/obo/RO_0000052")),
+                        subject: AnnotationSubject::IRI(
+                            build.iri("http://purl.obolibrary.org/obo/RO_0000052")
+                        ),
                         ann: Annotation {
-                            ap: build.annotation_property("http://www.geneontology.org/formats/oboInOwl#hasDbXref"),
+                            ap: build.annotation_property(
+                                "http://www.geneontology.org/formats/oboInOwl#hasDbXref"
+                            ),
                             av: AnnotationValue::Literal(Literal::Simple {
                                 literal: String::from("RO:0000052")
                             })
                         }
-                    }.into(),
+                    }
+                    .into(),
                     AnnotationAssertion {
-                        subject: AnnotationSubject::IRI(build.iri("http://purl.obolibrary.org/obo/RO_0000052")),
+                        subject: AnnotationSubject::IRI(
+                            build.iri("http://purl.obolibrary.org/obo/RO_0000052")
+                        ),
                         ann: Annotation {
-                            ap: build.annotation_property("http://www.w3.org/2000/01/rdf-schema#label"),
+                            ap: build
+                                .annotation_property("http://www.w3.org/2000/01/rdf-schema#label"),
                             av: AnnotationValue::Literal(Literal::Simple {
                                 literal: String::from("inheres in")
                             })
                         }
-                    }.into(),
+                    }
+                    .into(),
                 ]
             )
         );
@@ -1279,7 +1473,9 @@ mod tests {
         let build = Build::new();
         let mut prefixes = PrefixMapping::default();
         prefixes.set_default("http://www.example.com/owl/families#");
-        prefixes.add_prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#").unwrap();
+        prefixes
+            .add_prefix("rdfs", "http://www.w3.org/2000/01/rdf-schema#")
+            .unwrap();
 
         assert_parse_into!(
             SetOntology<String>,
@@ -1307,23 +1503,28 @@ mod tests {
         );
 
         let mut ont = SetOntology::new();
-        ont.insert( AnnotatedAxiom {
-            ann: BTreeSet::from_iter(vec![
-                Annotation {
-                    ap: build.annotation_property("http://www.example.com/owl/families#creator"),
-                    av: AnnotationValue::IRI(build.iri("http://www.example.com/owl/families#John")),
-                }
-            ]),
+        ont.insert(AnnotatedAxiom {
+            ann: BTreeSet::from_iter(vec![Annotation {
+                ap: build.annotation_property("http://www.example.com/owl/families#creator"),
+                av: AnnotationValue::IRI(build.iri("http://www.example.com/owl/families#John")),
+            }]),
             axiom: Axiom::OntologyAnnotation(OntologyAnnotation(Annotation {
-                ap: build.annotation_property("http://www.geneontology.org/formats/oboInOwl#hasOBOFormatVersion"),
-                av: AnnotationValue::Literal(Literal::Simple { literal: String::from("1.2") })
+                ap: build.annotation_property(
+                    "http://www.geneontology.org/formats/oboInOwl#hasOBOFormatVersion",
+                ),
+                av: AnnotationValue::Literal(Literal::Simple {
+                    literal: String::from("1.2"),
+                }),
             })),
         });
-        ont.insert( AnnotatedAxiom {
+        ont.insert(AnnotatedAxiom {
             ann: BTreeSet::new(),
             axiom: Axiom::OntologyAnnotation(OntologyAnnotation(Annotation {
-                ap: build.annotation_property("http://www.geneontology.org/formats/oboInOwl#saved-by"),
-                av: AnnotationValue::Literal(Literal::Simple { literal: String::from("cooperl") })
+                ap: build
+                    .annotation_property("http://www.geneontology.org/formats/oboInOwl#saved-by"),
+                av: AnnotationValue::Literal(Literal::Simple {
+                    literal: String::from("cooperl"),
+                }),
             })),
         });
         assert_parse_into!(

@@ -60,10 +60,22 @@ mod tests {
 
     #[test]
     fn annotation_annotated_list() {
-        assert_parse!(Rule::AnnotationAnnotatedList, r#"creator John , creationYear 2008"#);
-        assert_parse!(Rule::AnnotationAnnotatedList, r#"creator John , creationYear 2008 , creator John"#);
-        assert_parse!(Rule::AnnotationAnnotatedList, r#"creator John, creationYear 2008, mainClass Person"#);
-        assert_parse!(Rule::AnnotationAnnotatedList, r#"creator John, creationYear 2008, mainClass Person"#);
+        assert_parse!(
+            Rule::AnnotationAnnotatedList,
+            r#"creator John , creationYear 2008"#
+        );
+        assert_parse!(
+            Rule::AnnotationAnnotatedList,
+            r#"creator John , creationYear 2008 , creator John"#
+        );
+        assert_parse!(
+            Rule::AnnotationAnnotatedList,
+            r#"creator John, creationYear 2008, mainClass Person"#
+        );
+        assert_parse!(
+            Rule::AnnotationAnnotatedList,
+            r#"creator John, creationYear 2008, mainClass Person"#
+        );
     }
 
     #[test]
@@ -111,17 +123,41 @@ mod tests {
 
     #[test]
     fn class_clause() {
-        assert_parse!(Rule::ClassClause, r#"SubClassOf: owl:Thing that hasFirstName exactly 1"#);
-        assert_parse!(Rule::ClassClause, r#"SubClassOf: owl:Thing that hasFirstName only string[minLength 1]"#);
-        assert_parse!(Rule::ClassClause, r#"SubClassOf: owl:Thing that hasFirstName exactly 1 and hasFirstName only string[minLength 1]"#);
-        assert_parse!(Rule::ClassClause, r#"SubClassOf: hasAge exactly 1 and hasAge only not NegInt"#);
-        assert_parse!(Rule::ClassClause, r#"SubClassOf: hasGender exactly 1 and hasGender only {female , male}"#);
-        assert_parse!(Rule::ClassClause, r#"SubClassOf: hasSSN max 1, hasSSN min 1"#);
+        assert_parse!(
+            Rule::ClassClause,
+            r#"SubClassOf: owl:Thing that hasFirstName exactly 1"#
+        );
+        assert_parse!(
+            Rule::ClassClause,
+            r#"SubClassOf: owl:Thing that hasFirstName only string[minLength 1]"#
+        );
+        assert_parse!(
+            Rule::ClassClause,
+            r#"SubClassOf: owl:Thing that hasFirstName exactly 1 and hasFirstName only string[minLength 1]"#
+        );
+        assert_parse!(
+            Rule::ClassClause,
+            r#"SubClassOf: hasAge exactly 1 and hasAge only not NegInt"#
+        );
+        assert_parse!(
+            Rule::ClassClause,
+            r#"SubClassOf: hasGender exactly 1 and hasGender only {female , male}"#
+        );
+        assert_parse!(
+            Rule::ClassClause,
+            r#"SubClassOf: hasSSN max 1, hasSSN min 1"#
+        );
         assert_parse!(Rule::ClassClause, r#"SubClassOf: not hates Self"#);
         assert_parse!(Rule::ClassClause, r#"EquivalentTo: g:People"#);
         assert_parse!(Rule::ClassClause, r#"DisjointWith: g:Rock , g:Mineral"#);
-        assert_parse!(Rule::ClassClause, r#"DisjointUnionOf: Annotations: description "either child or adult" Child, Adult"#);
-        assert_parse!(Rule::ClassClause, r#"HasKey: Annotations: description "has social security number" hasSSN"#);
+        assert_parse!(
+            Rule::ClassClause,
+            r#"DisjointUnionOf: Annotations: description "either child or adult" Child, Adult"#
+        );
+        assert_parse!(
+            Rule::ClassClause,
+            r#"HasKey: Annotations: description "has social security number" hasSSN"#
+        );
     }
 
     #[test]
@@ -179,7 +215,10 @@ mod tests {
 
     #[test]
     fn conjuction() {
-        assert_parse!(Rule::Conjuction, r#"owl:Thing that hasFirstName exactly 1 and hasFirstName only string[minLength 1]"#);
+        assert_parse!(
+            Rule::Conjuction,
+            r#"owl:Thing that hasFirstName exactly 1 and hasFirstName only string[minLength 1]"#
+        );
     }
 
     #[test]
@@ -243,8 +282,14 @@ mod tests {
 
     #[test]
     fn individual_clause() {
-        assert_parse!(Rule::IndividualClause, r#"Types: Person , hasFirstName value "John" or hasFirstName value "Jack"^^xsd:string"#);
-        assert_parse!(Rule::IndividualClause, r#"Facts: hasWife Mary, not hasChild Susan, hasAge 33, hasChild _:child1"#);
+        assert_parse!(
+            Rule::IndividualClause,
+            r#"Types: Person , hasFirstName value "John" or hasFirstName value "Jack"^^xsd:string"#
+        );
+        assert_parse!(
+            Rule::IndividualClause,
+            r#"Facts: hasWife Mary, not hasChild Susan, hasAge 33, hasChild _:child1"#
+        );
     }
 
     #[test]
@@ -288,21 +333,39 @@ mod tests {
 
     #[test]
     fn misc() {
-        assert_parse!(Rule::Misc, r#"DisjointClasses: Annotations: creator Jonh g:Rock, g:Scissor, g:Paper"#);
+        assert_parse!(
+            Rule::Misc,
+            r#"DisjointClasses: Annotations: creator Jonh g:Rock, g:Scissor, g:Paper"#
+        );
     }
 
     #[test]
     fn object_property_clause() {
         assert_parse!(Rule::ObjectPropertyClause, "Range: Person, Woman");
-        assert_parse!(Rule::ObjectPropertyClause, "SubPropertyOf: hasSpouse, loves");
+        assert_parse!(
+            Rule::ObjectPropertyClause,
+            "SubPropertyOf: hasSpouse, loves"
+        );
         assert_parse!(Rule::ObjectPropertyClause, "EquivalentTo: isMarriedTo");
         assert_parse!(Rule::ObjectPropertyClause, "DisjointWith: hates");
-        assert_parse!(Rule::ObjectPropertyClause, "InverseOf: hasSpouse, inverse hasSpouse");
+        assert_parse!(
+            Rule::ObjectPropertyClause,
+            "InverseOf: hasSpouse, inverse hasSpouse"
+        );
         assert_parse!(Rule::ObjectPropertyClause, "Characteristics: Transitive");
         assert_parse!(Rule::ObjectPropertyClause, "SubPropertyChain: <http://purl.obolibrary.org/obo/BFO_0000050> o <http://purl.obolibrary.org/obo/BFO_0000062>");
-        assert_parse!(Rule::ObjectPropertyClause, "Domain: <http://purl.obolibrary.org/obo/BFO_0000003>");
-        assert_parse!(Rule::ObjectPropertyClause, "Range: <http://purl.obolibrary.org/obo/BFO_0000003>");
-        assert_parse!(Rule::ObjectPropertyClause, "InverseOf: <http://purl.obolibrary.org/obo/BFO_0000063>");
+        assert_parse!(
+            Rule::ObjectPropertyClause,
+            "Domain: <http://purl.obolibrary.org/obo/BFO_0000003>"
+        );
+        assert_parse!(
+            Rule::ObjectPropertyClause,
+            "Range: <http://purl.obolibrary.org/obo/BFO_0000003>"
+        );
+        assert_parse!(
+            Rule::ObjectPropertyClause,
+            "InverseOf: <http://purl.obolibrary.org/obo/BFO_0000063>"
+        );
     }
 
     #[test]
@@ -431,8 +494,14 @@ mod tests {
 
     #[test]
     fn prefix() {
-        assert_parse!(Rule::PrefixDeclaration, r#"Prefix: : <http://ex.com/owl/families#>"#);
-        assert_parse!(Rule::PrefixDeclaration, r#"Prefix: g: <http://ex.com/owl2/families#>"#);
+        assert_parse!(
+            Rule::PrefixDeclaration,
+            r#"Prefix: : <http://ex.com/owl/families#>"#
+        );
+        assert_parse!(
+            Rule::PrefixDeclaration,
+            r#"Prefix: g: <http://ex.com/owl2/families#>"#
+        );
     }
 
     #[test]
@@ -443,7 +512,10 @@ mod tests {
     #[test]
     fn restriction() {
         assert_parse!(Rule::Restriction, r#"hasFirstName exactly 1"#);
-        assert_parse!(Rule::Restriction, r#"hasFirstName only string[minLength 1]"#);
+        assert_parse!(
+            Rule::Restriction,
+            r#"hasFirstName only string[minLength 1]"#
+        );
     }
 
     #[test]

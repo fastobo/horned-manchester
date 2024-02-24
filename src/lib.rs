@@ -1,4 +1,3 @@
-
 #[macro_use]
 extern crate thiserror;
 #[macro_use]
@@ -9,10 +8,10 @@ extern crate horned_owl;
 extern crate pest;
 
 mod error;
-pub mod parser;
 mod frames;
-mod from_pair;
 mod from_omn;
+mod from_pair;
+pub mod parser;
 
 use std::borrow::Borrow;
 use std::fs::File;
@@ -20,17 +19,16 @@ use std::io::Read;
 use std::path::Path;
 
 use curie::PrefixMapping;
-use horned_owl::model::IRI;
-use horned_owl::model::ForIRI;
 use horned_owl::model::Build;
-use horned_owl::model::Ontology;
+use horned_owl::model::ForIRI;
 use horned_owl::model::MutableOntology;
+use horned_owl::model::Ontology;
+use horned_owl::model::IRI;
 
-pub use self::from_pair::FromPair;
 pub use self::error::Error;
 pub use self::error::Result;
 pub use self::from_omn::FromManchester;
-
+pub use self::from_pair::FromPair;
 
 /// A context to pass around while parsing and writing OWL Manchester documents.
 #[derive(Debug)]

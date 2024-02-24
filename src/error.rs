@@ -76,7 +76,9 @@ impl Error {
     // Create a custom `pest` error spanning the given pair.
     pub fn custom<S: Into<String>>(message: S, pair: Pair<Rule>) -> Self {
         Self::Pest(pest::error::Error::new_from_span(
-            pest::error::ErrorVariant::CustomError { message: message.into() },
+            pest::error::ErrorVariant::CustomError {
+                message: message.into(),
+            },
             pair.as_span(),
         ))
     }

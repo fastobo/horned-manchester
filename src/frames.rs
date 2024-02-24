@@ -31,7 +31,7 @@ macro_rules! impl_from {
                 Self { entity, axioms }
             }
         }
-    }
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -46,13 +46,11 @@ pub type ClassFrame<A> = Frame<A, Class<A>>;
 
 impl_from!(ClassFrame, Class, DeclareClass);
 
-
 // ---------------------------------------------------------------------------
 
 pub type ObjectPropertyFrame<A> = Frame<A, ObjectProperty<A>>;
 
 impl_from!(ObjectPropertyFrame, ObjectProperty, DeclareObjectProperty);
-
 
 // ---------------------------------------------------------------------------
 
@@ -60,13 +58,15 @@ pub type DataPropertyFrame<A> = Frame<A, DataProperty<A>>;
 
 impl_from!(DataPropertyFrame, DataProperty, DeclareDataProperty);
 
-
 // ---------------------------------------------------------------------------
 
 pub type AnnotationPropertyFrame<A> = Frame<A, AnnotationProperty<A>>;
 
-impl_from!(AnnotationPropertyFrame, AnnotationProperty, DeclareAnnotationProperty);
-
+impl_from!(
+    AnnotationPropertyFrame,
+    AnnotationProperty,
+    DeclareAnnotationProperty
+);
 
 // ---------------------------------------------------------------------------
 
@@ -77,9 +77,8 @@ impl<A: ForIRI> From<Individual<A>> for IndividualFrame<A> {
     fn from(entity: Individual<A>) -> Self {
         let axioms = match &entity {
             Individual::Anonymous(_) => Vec::new(),
-            Individual::Named(ni) => vec![DeclareNamedIndividual(ni.clone()).into()]
+            Individual::Named(ni) => vec![DeclareNamedIndividual(ni.clone()).into()],
         };
         Self { entity, axioms }
     }
 }
-

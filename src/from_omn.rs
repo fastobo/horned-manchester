@@ -100,10 +100,9 @@ implement!(
     Literal,
     // ObjectPropertyExpression,
     // ObjectProperty,
-    SetOntology
-    // OntologyAnnotation,
-    // String,
-    // SubObjectPropertyExpression
+    SetOntology // OntologyAnnotation,
+                // String,
+                // SubObjectPropertyExpression
 );
 
 #[cfg(test)]
