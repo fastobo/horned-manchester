@@ -5,6 +5,7 @@ use curie::PrefixMapping;
 use horned_owl::model::*;
 use horned_owl::ontology::set::SetOntology;
 use pest::iterators::Pair;
+use pest::iterators::Pairs;
 
 use crate::error::Error;
 use crate::error::Result;
@@ -84,6 +85,17 @@ impl_vector!(A, Vec<Literal<A>>, Rule::LiteralList);
 impl_vector!(A, Vec<Individual<A>>, Rule::IndividualList);
 
 // ---------------------------------------------------------------------------
+
+/// Parse optional `Annotations` into a `BTreeSet` to use with `AnnotatedAxioms`.
+fn axiom_annotations<'a, A: ForIRI>(pair: &mut Pair<'a, Rule>, pairs: &mut Pairs<'a, Rule>, ctx: &Context<'_, A>) -> Result<BTreeSet<Annotation<A>>> {
+    if pair.as_rule() == Rule::Annotations {
+        let p = std::mem::replace(pair, pairs.next().unwrap());
+        let anns = BTreeSet::from_pair(p.into_inner().next().unwrap(), ctx)?;
+        Ok(anns)
+    } else {
+        Ok(BTreeSet::new())
+    }
+}
 
 impl<A: ForIRI> FromPair<A> for Annotation<A> {
     const RULE: Rule = Rule::Annotation;
@@ -170,7 +182,7 @@ fn from_primary_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Resul
         is_complement = true;
         pair = inner.next().unwrap();
     }
-    
+
     let ce = match pair.as_rule() {
         Rule::Restriction => from_restriction_pair(pair, ctx),
         Rule::Atomic => from_atomic_pair(pair, ctx),
@@ -186,7 +198,7 @@ fn from_primary_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Resul
 
 fn from_conjuction_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<ClassExpression<A>> {
     debug_assert!(pair.as_rule() == Rule::Conjuction);
-    
+
     let mut inner = pair.into_inner().peekable();
     match inner.peek().unwrap().as_rule() {
         Rule::ClassIRI => {
@@ -220,7 +232,6 @@ impl<A: ForIRI> FromPair<A> for ClassExpression<A> {
     const RULE: Rule = Rule::Description;
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
         let mut inner = pair.into_inner();
-
         if inner.len() == 1 {
             from_conjuction_pair(inner.next().unwrap(), ctx)
         } else {
@@ -230,7 +241,6 @@ impl<A: ForIRI> FromPair<A> for ClassExpression<A> {
                     .collect::<Result<_>>()?
             ))
         }
-
     }
 }
 
@@ -358,10 +368,10 @@ impl<A: ForIRI> FromPair<A> for OntologyID<A> {
             Some(pair) => Some(FromPair::<A>::from_pair(pair, ctx)?),
             None => None,
         };
-        
+
         Ok(OntologyID { iri, viri })
     }
-} 
+}
 
 impl<A: ForIRI> FromPair<A> for SetOntology<A> {
     const RULE: Rule = Rule::Ontology;
@@ -385,21 +395,10 @@ impl<A: ForIRI> FromPair<A> for SetOntology<A> {
 
         // Process ontology annotations
         while pairs.peek().map(|p| p.as_rule() == Rule::Annotations).unwrap_or(false) {
-
-
             let mut annotations = pairs.next().unwrap().into_inner();
             let mut annotated_list = annotations.next().unwrap().into_inner();
-            // println!("annotated_list={:#?}", annotated_list);
-
             while let Some(mut pair) = annotated_list.next() {
-                let anns;
-                if pair.as_rule() == Rule::Annotations {
-                    anns = BTreeSet::<Annotation<A>>::from_pair(pair.into_inner().next().unwrap(), ctx)?;
-                    pair = annotated_list.next().unwrap();
-                } else {
-                    anns = BTreeSet::new();
-                }
-
+                let anns = axiom_annotations(&mut pair, &mut annotated_list, ctx)?;
                 let annotation = Annotation::from_pair(pair, ctx)?;
                 ontology.insert(
                     AnnotatedAxiom {
@@ -409,7 +408,7 @@ impl<A: ForIRI> FromPair<A> for SetOntology<A> {
                 );
             }
         }
-        
+
         // Process frames
         for pair in pairs {
             debug_assert!(pair.as_rule() == Rule::Frame);
@@ -452,7 +451,7 @@ impl<A: ForIRI> FromPair<A> for ClassFrame<A> {
     const RULE: Rule = Rule::ClassFrame;
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
         let mut pairs = pair.into_inner();
-        
+
         let class = Class::from_pair(pairs.next().unwrap(), ctx)?;
         let mut frame = ClassFrame::new(class);
 
@@ -463,22 +462,14 @@ impl<A: ForIRI> FromPair<A> for ClassFrame<A> {
                 Rule::ClassAnnotationsClause => {
                     let mut annotated_list = inner.into_inner().next().unwrap().into_inner();
                     while let Some(mut pair) = annotated_list.next() {
-                        let mut annotations = BTreeSet::new();
-                        if pair.as_rule() == Rule::Annotations {
-                            annotations = FromPair::from_pair(pair, ctx)?;
-                            pair = annotated_list.next().unwrap();
-                        } else {
-                            annotations = BTreeSet::new();
-                        }
-
+                        let annotations = axiom_annotations(&mut pair, &mut annotated_list, ctx)?;
                         let ann = FromPair::from_pair(pair, ctx)?;
                         let subject = AnnotationSubject::IRI(frame.class.0.clone());
-
                         let assertion = AnnotationAssertion { subject, ann };
                         frame.axioms.push(
-                            AnnotatedAxiom { 
-                                axiom: Axiom::AnnotationAssertion(assertion), 
-                                ann: annotations 
+                            AnnotatedAxiom {
+                                axiom: Axiom::AnnotationAssertion(assertion),
+                                ann: annotations
                             }
                         );
                     }
@@ -486,14 +477,7 @@ impl<A: ForIRI> FromPair<A> for ClassFrame<A> {
                 Rule::ClassSubClassOfClause => {
                     let mut value = inner.into_inner().next().unwrap().into_inner();
                     while let Some(mut pair) = value.next() {
-                        let mut annotations = BTreeSet::new();
-                        if pair.as_rule() == Rule::Annotations {
-                            annotations = FromPair::from_pair(pair, ctx)?;
-                            pair = value.next().unwrap();
-                        } else {
-                            annotations = BTreeSet::new();
-                        }
-
+                        let annotations = axiom_annotations(&mut pair, &mut value, ctx)?;
                         let sub_class_of = SubClassOf {
                             sup: ClassExpression::Class(frame.class.clone()),
                             sub: ClassExpression::from_pair(pair, ctx)?,
@@ -509,57 +493,39 @@ impl<A: ForIRI> FromPair<A> for ClassFrame<A> {
                 Rule::ClassEquivalentToClause => {
                     let mut value = inner.into_inner().next().unwrap().into_inner();
                     while let Some(mut pair) = value.next() {
-                        let mut annotations = BTreeSet::new();
-                        if pair.as_rule() == Rule::Annotations {
-                            annotations = FromPair::from_pair(pair, ctx)?;
-                            pair = value.next().unwrap();
-                        } else {
-                            annotations = BTreeSet::new();
-                        }
-
-                        let equivalent_classes = EquivalentClasses(vec![
+                        let ann = axiom_annotations(&mut pair, &mut value, ctx)?;
+                        let axiom = EquivalentClasses(vec![
                             ClassExpression::Class(frame.class.clone()),
                             ClassExpression::from_pair(pair, ctx)?,
-                        ]);
-                        frame.axioms.push(
-                            AnnotatedAxiom {
-                                axiom: Axiom::EquivalentClasses(equivalent_classes),
-                                ann: annotations,
-                            }
-                        );
+                        ]).into();
+                        frame.axioms.push(AnnotatedAxiom { axiom, ann });
                     }
                 }
                 Rule::ClassDisjointWithClause => {
-                    // let mut value = inner.next().unwrap().into_inner();
-                    // while let Some(mut pair) = value.next() {
-                    //     let annotations;
-                    //     if pair.as_rule() == Rule::Annotations {
-                    //         annotations = FromPair::from_pair(pair, ctx)?;
-                    //         pair = value.next().unwrap();
-                    //     } else {
-                    //         annotations = BTreeSet::new();
-                    //     }
-
-                    //     let disjoint_classes = DisjointClasses(vec![
-                    //         ClassExpression::Class(frame.class.clone()),
-                    //         ClassExpression::from_pair(pair, ctx)?,
-                    //     ]);
-                    //     frame.axioms.push(
-                    //         AnnotatedAxiom {
-                    //             axiom: Axiom::DisjointClasses(disjoint_classes),
-                    //             ann: annotations,
-                    //         }
-                    //     );
-                    // }
-                    unimplemented!()
+                    let mut value = inner.into_inner().next().unwrap().into_inner();
+                    while let Some(mut pair) = value.next() {
+                        let ann = axiom_annotations(&mut pair, &mut value, ctx)?;
+                        let axiom = DisjointClasses(vec![
+                            ClassExpression::Class(frame.class.clone()),
+                            ClassExpression::from_pair(pair, ctx)?,
+                        ]).into();
+                        frame.axioms.push(AnnotatedAxiom { axiom, ann });
+                    }
                 }
                 Rule::ClassDisjointUnionOfClause => {
-                    unimplemented!()
+                    let mut value = inner.into_inner();
+                    let mut pair = value.next().unwrap();
+                    let ann = axiom_annotations(&mut pair, &mut value, ctx)?;
+                    let descriptions = pair.into_inner()
+                        .map(|pair| ClassExpression::from_pair(pair, ctx))
+                        .collect::<Result<Vec<_>>>()?;
+                    let axiom = DisjointUnion(frame.class.clone(), descriptions).into();
+                    frame.axioms.push(AnnotatedAxiom { axiom, ann })
                 }
                 Rule::ClassHasKeyClause => {
                     // let mut value = inner.next().unwrap().into_inner();
                     // let mut pair = value.next().unwrap();
-                    
+
                     // let annotations;
                     // if pair.as_rule() == Rule::Annotations {
                     //     annotations = FromPair::from_pair(pair, ctx)?;
@@ -602,22 +568,14 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
                 Rule::ObjectPropertyAnnotationsClause => {
                     let mut annotated_list = inner.into_inner().next().unwrap().into_inner();
                     while let Some(mut pair) = annotated_list.next() {
-                        let mut annotations = BTreeSet::new();
-                        if pair.as_rule() == Rule::Annotations {
-                            annotations = FromPair::from_pair(pair, ctx)?;
-                            pair = annotated_list.next().unwrap();
-                        } else {
-                            annotations = BTreeSet::new();
-                        }
-
+                        let annotations = axiom_annotations(&mut pair, &mut annotated_list, ctx)?;
                         let ann = FromPair::from_pair(pair, ctx)?;
                         let subject = AnnotationSubject::IRI(frame.op.0.clone());
-
                         let assertion = AnnotationAssertion { subject, ann };
                         frame.axioms.push(
-                            AnnotatedAxiom { 
-                                axiom: Axiom::AnnotationAssertion(assertion), 
-                                ann: annotations 
+                            AnnotatedAxiom {
+                                axiom: Axiom::AnnotationAssertion(assertion),
+                                ann: annotations
                             }
                         );
                     }
@@ -642,7 +600,7 @@ impl<A: ForIRI> FromPair<A> for AnnotationPropertyFrame<A> {
     const RULE: Rule = Rule::AnnotationPropertyFrame;
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
         let mut pairs = pair.into_inner();
-        
+
         let ap = AnnotationProperty::from_pair(pairs.next().unwrap(), ctx)?;
         let mut frame = AnnotationPropertyFrame::new(ap);
 
@@ -666,9 +624,9 @@ impl<A: ForIRI> FromPair<A> for AnnotationPropertyFrame<A> {
 
                         let assertion = AnnotationAssertion { subject, ann };
                         frame.axioms.push(
-                            AnnotatedAxiom { 
-                                axiom: Axiom::AnnotationAssertion(assertion), 
-                                ann: annotations 
+                            AnnotatedAxiom {
+                                axiom: Axiom::AnnotationAssertion(assertion),
+                                ann: annotations
                             }
                         );
                     }
@@ -678,20 +636,20 @@ impl<A: ForIRI> FromPair<A> for AnnotationPropertyFrame<A> {
                     // while value.peek().is_some() {
                     //     let mut pair = value.next().unwrap();
                     //     let mut annotations = BTreeSet::new();
-                        
+
                     //     if pair.as_rule() == Rule::Annotations {
                     //         annotations = FromPair::from_pair(pair, ctx)?;
                     //         pair = value.next().unwrap();
-                    //     } 
+                    //     }
 
                     //     let ap = frame.ap.clone();
                     //     let iri = FromPair::from_pair(pair, ctx)?;
 
                     //     let apd = AnnotationPropertyDomain { ap, iri };
                     //     frame.axioms.push(
-                    //         AnnotatedAxiom { 
-                    //             axiom: Axiom::AnnotationPropertyDomain(apd), 
-                    //             ann: annotations 
+                    //         AnnotatedAxiom {
+                    //             axiom: Axiom::AnnotationPropertyDomain(apd),
+                    //             ann: annotations
                     //         }
                     //     );
                     // }
@@ -702,20 +660,20 @@ impl<A: ForIRI> FromPair<A> for AnnotationPropertyFrame<A> {
                     // while value.peek().is_some() {
                     //     let mut pair = value.next().unwrap();
                     //     let mut annotations = BTreeSet::new();
-                        
+
                     //     if pair.as_rule() == Rule::Annotations {
                     //         annotations = FromPair::from_pair(pair, ctx)?;
                     //         pair = value.next().unwrap();
-                    //     } 
+                    //     }
 
                     //     let ap = frame.ap.clone();
                     //     let iri = FromPair::from_pair(pair, ctx)?;
 
                     //     let apr = AnnotationPropertyRange { ap, iri };
                     //     frame.axioms.push(
-                    //         AnnotatedAxiom { 
-                    //             axiom: Axiom::AnnotationPropertyRange(apr), 
-                    //             ann: annotations 
+                    //         AnnotatedAxiom {
+                    //             axiom: Axiom::AnnotationPropertyRange(apr),
+                    //             ann: annotations
                     //         }
                     //     );
                     // }
@@ -863,7 +821,7 @@ mod tests {
             }
         };
     }
-    
+
     #[test]
     fn annotation_property_frame() {
         let build = Build::new();
@@ -931,11 +889,11 @@ mod tests {
             prefixes,
             r#"
             Class: <http://purl.obolibrary.org/obo/APO_0000098>
-            
-                Annotations: 
+
+                Annotations:
                     rdfs:label "utilization of carbon source"
-                
-                SubClassOf: 
+
+                SubClassOf:
                     <http://purl.obolibrary.org/obo/APO_0000096>
             "#,
             ClassFrame::with_axioms(
@@ -966,6 +924,35 @@ mod tests {
                             )
                         })
                     }
+                ]
+            )
+        );
+
+        assert_parse_into!(
+            ClassFrame<String>,
+            Rule::ClassFrame,
+            build,
+            prefixes,
+            r#"
+            Class: <http://purl.obolibrary.org/obo/BFO_0000002>
+
+            DisjointWith:
+                <http://purl.obolibrary.org/obo/BFO_0000003>
+            "#,
+            ClassFrame::with_axioms(
+                build.class("http://purl.obolibrary.org/obo/BFO_0000002"),
+                vec![
+                    AnnotatedAxiom {
+                        ann: BTreeSet::new(),
+                        axiom: Axiom::DisjointClasses(
+                            DisjointClasses(
+                                vec![
+                                    ClassExpression::Class(build.class("http://purl.obolibrary.org/obo/BFO_0000002")),
+                                    ClassExpression::Class(build.class("http://purl.obolibrary.org/obo/BFO_0000003")),
+                                ]
+                            )
+                        )
+                    },
                 ]
             )
         );
@@ -1036,7 +1023,7 @@ mod tests {
             r#"
             ObjectProperty: <http://purl.obolibrary.org/obo/RO_0000052>
 
-            Annotations: 
+            Annotations:
                 <http://www.geneontology.org/formats/oboInOwl#hasDbXref> "RO:0000052",
                 rdfs:label "inheres in"
 
@@ -1072,7 +1059,7 @@ mod tests {
                             }
                         )
                     },
-                   
+
                 ]
             )
         );
@@ -1091,7 +1078,7 @@ mod tests {
             build,
             prefixes,
             r#"
-            Ontology: 
+            Ontology:
             "#,
             SetOntology::new()
         );
@@ -1135,10 +1122,10 @@ mod tests {
             Rule::Ontology,
             build,
             prefixes,
-            r#"Ontology: 
-            
-            Annotations: 
-                Annotations: 
+            r#"Ontology:
+
+            Annotations:
+                Annotations:
                     creator John
                 <http://www.geneontology.org/formats/oboInOwl#hasOBOFormatVersion> "1.2",
                 <http://www.geneontology.org/formats/oboInOwl#saved-by> "cooperl"

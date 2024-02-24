@@ -313,14 +313,21 @@ ObjectPropertyCharacteristic = {
 }
 
 DataPropertyFrame = { (LIT_DATA_PROPERTY ~ COLON ~ DataPropertyIRI) ~ DataPropertyClause* }
+DataPropertyAnnotationsClause = { "Annotations:" ~ AnnotationAnnotatedList }
+DataPropertyDomainClause = { "Domain:" ~ DescriptionAnnotatedList }
+DataPropertyRangeClause = { "Range:" ~ DescriptionAnnotatedList }
+DataPropertyCharacteristicsClause = { "Characteristics:" ~ Annotations? ~ "Functional" }
+DataPropertySubPropertyOfClause = { "SubPropertyOf:" ~ DataPropertyExpressionAnnotatedList }
+DataPropertyEquivalentToClause = { "EquivalentTo:" ~ DataPropertyExpressionAnnotatedList }
+DataPropertyDisjointWithClause = { "DisjointWith:" ~ DataPropertyExpressionAnnotatedList }
 DataPropertyClause = {
-        (LIT_ANNOTATIONS ~ COLON ~ AnnotationAnnotatedList)
-    |   (LIT_DOMAIN ~ COLON ~ DescriptionAnnotatedList)
-    |   (LIT_RANGE ~ COLON ~ DescriptionAnnotatedList)
-    |   (LIT_CHARACTERISTICS ~ COLON ~ Annotations? ~ "Functional")
-    |   (LIT_SUB_PROPERTY_OF ~ COLON ~ DataPropertyExpressionAnnotatedList)
-    |   (LIT_EQUIVALENT_TO ~ COLON ~ DataPropertyExpressionAnnotatedList)
-    |   (LIT_DISJOINT_WITH ~ COLON ~ DataPropertyExpressionAnnotatedList)
+    DataPropertyAnnotationsClause
+    | DataPropertyDomainClause
+    | DataPropertyRangeClause
+    | DataPropertyCharacteristicsClause
+    | DataPropertySubPropertyOfClause
+    | DataPropertyEquivalentToClause
+    | DataPropertyDisjointWithClause
 }
 
 AnnotationPropertyFrame               = { "AnnotationProperty:" ~ AnnotationPropertyIRI ~ AnnotationPropertyClause* }
