@@ -23,7 +23,7 @@ pub enum Error {
     /// assert_matches!(res, Err(horned_functional::Error::Pest(_)));
     /// ```
     #[error(transparent)]
-    Pest(#[from] pest::error::Error<Rule>),
+    Pest(Box<pest::error::Error<Rule>>),
 
     /// An error that happened at the I/O level.
     ///
@@ -75,12 +75,18 @@ pub enum Error {
 impl Error {
     // Create a custom `pest` error spanning the given pair.
     pub fn custom<S: Into<String>>(message: S, pair: Pair<Rule>) -> Self {
-        Self::Pest(pest::error::Error::new_from_span(
+        Self::from(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError {
                 message: message.into(),
             },
             pair.as_span(),
         ))
+    }
+}
+
+impl From<pest::error::Error<Rule>> for Error {
+    fn from(e: pest::error::Error<Rule>) -> Self {
+        Error::Pest(Box::new(e))
     }
 }
 
