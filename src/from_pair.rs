@@ -448,6 +448,25 @@ impl<A: ForIRI> FromPair<A> for AnonymousIndividual<A> {
 impl<A: ForIRI> FromPair<A> for Literal<A> {
     const RULE: Rule = Rule::Literal;
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
+        macro_rules! xsd_literal {
+            ($pair:ident, $ctx:ident, xsd: $datatype:expr) => {{
+                let literal = $pair.as_str().to_string();
+                let curie = Curie::new(Some("xsd"), stringify!($datatype));
+                let datatype_iri = if let Some(prefixes) = $ctx.prefixes {
+                    prefixes
+                        .expand_curie(&curie)
+                        .map_err(Error::from)
+                        .map(|s| $ctx.iri(s))?
+                } else {
+                    return Err(Error::from(curie::ExpansionError::Invalid));
+                };
+                Ok(Literal::Datatype {
+                    literal,
+                    datatype_iri,
+                })
+            }};
+        }
+
         let pair = pair.into_inner().next().unwrap();
         match pair.as_rule() {
             Rule::TypedLiteral => {
@@ -470,31 +489,10 @@ impl<A: ForIRI> FromPair<A> for Literal<A> {
                 let literal = String::from_pair(inner.next().unwrap(), ctx)?;
                 Ok(Literal::Simple { literal })
             }
-            Rule::IntegerLiteral => {
-                unimplemented!()
-            }
-            Rule::DecimalLiteral => {
-                unimplemented!()
-            }
-            Rule::FloatingPointLiteral => {
-                unimplemented!()
-            }
-            Rule::BooleanLiteral => {
-                let literal = pair.as_str().to_string();
-                let curie = Curie::new(Some("xsd"), "boolean");
-                let datatype_iri = if let Some(prefixes) = ctx.prefixes {
-                    prefixes
-                        .expand_curie(&curie)
-                        .map_err(Error::from)
-                        .map(|s| ctx.iri(s))?
-                } else {
-                    return Err(Error::from(curie::ExpansionError::Invalid));
-                };
-                Ok(Literal::Datatype {
-                    literal,
-                    datatype_iri,
-                })
-            }
+            Rule::IntegerLiteral => xsd_literal!(pair, ctx, xsd:integer),
+            Rule::DecimalLiteral => xsd_literal!(pair, ctx, xsd:decimal),
+            Rule::FloatingPointLiteral => xsd_literal!(pair, ctx, xsd:float),
+            Rule::BooleanLiteral => xsd_literal!(pair, ctx, xsd:boolean),
             rule => unexpected_rule!(Literal, rule),
         }
     }
