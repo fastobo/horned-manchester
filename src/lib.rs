@@ -35,32 +35,24 @@ pub use self::from_pair::FromPair;
 pub struct Context<'a, A: ForIRI> {
     build: Option<&'a Build<A>>,
     prefixes: Option<&'a PrefixMapping>,
+    strict: bool,
 }
 
 impl<'a, A: ForIRI> Default for Context<'a, A> {
     fn default() -> Self {
-        Self {
-            build: None,
-            prefixes: None,
-        }
+        Self::new(None, None)
     }
 }
 
 impl<'a, A: ForIRI> From<&'a Build<A>> for Context<'a, A> {
     fn from(build: &'a Build<A>) -> Self {
-        Self {
-            build: Some(build),
-            prefixes: None,
-        }
+        Self::new(build, None)
     }
 }
 
 impl<'a, A: ForIRI> From<&'a PrefixMapping> for Context<'a, A> {
     fn from(prefixes: &'a PrefixMapping) -> Self {
-        Self {
-            build: None,
-            prefixes: Some(prefixes),
-        }
+        Self::new(None, prefixes)
     }
 }
 
@@ -74,6 +66,7 @@ impl<'a, A: ForIRI> Context<'a, A> {
         Self {
             build: build.into(),
             prefixes: prefixes.into(),
+            strict: false,
         }
     }
 
