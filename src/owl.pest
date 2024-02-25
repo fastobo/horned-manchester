@@ -165,7 +165,7 @@ Ontology          = { "Ontology:" ~ OntologyID? ~ Import* ~ Annotations* ~ Frame
 OntologyID        = { IRI ~ IRI? }
 Import            = { "Import:" ~ ImportIRI }
 ImportIRI         = { IRI }
-Frame             = { DatatypeFrame | ClassFrame | ObjectPropertyFrame | DataPropertyFrame | AnnotationPropertyFrame | IndividualFrame | MiscFrame }
+Frame             = { DatatypeFrame | ClassFrame | ObjectPropertyFrame | DataPropertyFrame | AnnotationPropertyFrame | IndividualFrame | MiscClause }
 
 
 // 2.3 Property and Datatype Expressions
@@ -351,7 +351,6 @@ Fact = { KEYWORD_NOT? ~ (ObjectPropertyFact | DataPropertyFact) }
 ObjectPropertyFact = { ObjectPropertyIRI ~ Individual }
 DataPropertyFact = { DataPropertyIRI ~ Literal }
 
-MiscFrame                            = { MiscClause+ }
 MiscEquivalentClassesClause          = { "EquivalentClasses:" ~ Annotations? ~ Description2List }
 MiscDisjointClassesClause            = { "DisjointClasses:" ~ Annotations? ~ Description2List }
 MiscEquivalentObjectPropertiesClause = { "EquivalentProperties:" ~ Annotations? ~ ObjectPropertyExpression2List }

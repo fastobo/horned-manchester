@@ -84,16 +84,23 @@ impl<A: ForIRI> From<Individual<A>> for IndividualFrame<A> {
 
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Default)]
-pub struct Misc;
+#[derive(Debug, Clone)]
+pub struct MiscClause<A: ForIRI>(pub AnnotatedAxiom<A>);
 
-pub type MiscFrame<A> = Frame<A, Misc>;
+impl<A: ForIRI> MiscClause<A> {
+    pub fn new(axiom: AnnotatedAxiom<A>) -> Self {
+        MiscClause(axiom)
+    }
+}
 
-impl<A: ForIRI> MiscFrame<A> {
-    pub fn new() -> Self {
-        Self {
-            entity: Misc,
-            axioms: Vec::new(),
-        }
+impl<A: ForIRI> From<AnnotatedAxiom<A>> for MiscClause<A> {
+    fn from(axiom: AnnotatedAxiom<A>) -> Self {
+        MiscClause(axiom)
+    }
+}
+
+impl<A: ForIRI> From<MiscClause<A>> for AnnotatedAxiom<A> {
+    fn from(clause: MiscClause<A>) -> Self {
+        clause.0
     }
 }
