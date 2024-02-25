@@ -159,13 +159,13 @@ Annotations             = { "Annotations:" ~ AnnotationAnnotatedList }
 Annotation              = { AnnotationPropertyIRI ~ AnnotationTarget }
 AnnotationTarget        = { Literal | NodeID | IRI }
 
-OntologyDocument  = { PrefixDeclaration* ~ Ontology }
+OntologyDocument  = { SOI ~ PrefixDeclaration* ~ Ontology ~ EOI }
 PrefixDeclaration = { "Prefix:" ~ PrefixName ~ FullIRI }
 Ontology          = { "Ontology:" ~ OntologyID? ~ Import* ~ Annotations* ~ Frame* }
 OntologyID        = { IRI ~ IRI? }
 Import            = { "Import:" ~ ImportIRI }
 ImportIRI         = { IRI }
-Frame             = { DatatypeFrame | ClassFrame | ObjectPropertyFrame | DataPropertyFrame | AnnotationPropertyFrame | IndividualFrame | Misc }
+Frame             = { DatatypeFrame | ClassFrame | ObjectPropertyFrame | DataPropertyFrame | AnnotationPropertyFrame | IndividualFrame | MiscFrame }
 
 
 // 2.3 Property and Datatype Expressions
@@ -351,6 +351,7 @@ Fact = { KEYWORD_NOT? ~ (ObjectPropertyFact | DataPropertyFact) }
 ObjectPropertyFact = { ObjectPropertyIRI ~ Individual }
 DataPropertyFact = { DataPropertyIRI ~ Literal }
 
+MiscFrame                            = { MiscClause+ }
 MiscEquivalentClassesClause          = { "EquivalentClasses:" ~ Annotations? ~ Description2List }
 MiscDisjointClassesClause            = { "DisjointClasses:" ~ Annotations? ~ Description2List }
 MiscEquivalentObjectPropertiesClause = { "EquivalentProperties:" ~ Annotations? ~ ObjectPropertyExpression2List }
@@ -360,7 +361,7 @@ MiscDisjointDataPropertiesClause     = { "DisjointProperties:" ~ Annotations? ~ 
 MiscSameIndividualClause             = { "SameIndividual:" ~ Annotations? ~ Individual2List }
 MiscDifferentIndividualsClause       = { "DifferentIndividuals:" ~ Annotations? ~ Individual2List }
 MiscHasKeyClause                     = { "HasKey:" ~ Description ~ Annotations? ~ PropertyExpression+ }
-Misc = {
+MiscClause = {
     MiscEquivalentClassesClause
     | MiscDisjointClassesClause
     | MiscEquivalentObjectPropertiesClause

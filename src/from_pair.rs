@@ -15,6 +15,7 @@ use crate::frames::AnnotationPropertyFrame;
 use crate::frames::ClassFrame;
 use crate::frames::DataPropertyFrame;
 use crate::frames::DatatypeFrame;
+use crate::frames::MiscFrame;
 
 use crate::frames::IndividualFrame;
 use crate::frames::ObjectPropertyFrame;
@@ -637,23 +638,8 @@ impl<A: ForIRI> FromPair<A> for SetOntology<A> {
                     AnnotationPropertyFrame::from_pair(inner, ctx)?.into_axioms()
                 }
                 Rule::IndividualFrame => IndividualFrame::from_pair(inner, ctx)?.into_axioms(),
-                Rule::Misc => {
-                    let inner = inner.into_inner().next().unwrap();
-                    let axiom = match inner.as_rule() {
-                        Rule::MiscEquivalentClassesClause => unimplemented!(),
-                        Rule::MiscDisjointClassesClause => unimplemented!(),
-                        Rule::MiscEquivalentObjectPropertiesClause => unimplemented!(),
-                        Rule::MiscDisjointObjectPropertiesClause => unimplemented!(),
-                        Rule::MiscEquivalentDataPropertiesClause => unimplemented!(),
-                        Rule::MiscDisjointDataPropertiesClause => unimplemented!(),
-                        Rule::MiscSameIndividualClause => unimplemented!(),
-                        Rule::MiscDifferentIndividualsClause => unimplemented!(),
-                        Rule::MiscHasKeyClause => unimplemented!(),
-                        rule => unexpected_rule!(ClassFrame, rule),
-                    };
-                    vec![axiom]
-                }
-                rule => unexpected_rule!(ClassFrame, rule),
+                Rule::MiscFrame => MiscFrame::from_pair(inner, ctx)?.into_axioms(),
+                rule => unexpected_rule!(Frame, rule),
             };
             for axiom in axioms {
                 ontology.insert(axiom);
@@ -1239,6 +1225,34 @@ impl<A: ForIRI> FromPair<A> for IndividualFrame<A> {
                 Rule::IndividualSameAsClause => unimplemented!(),
                 Rule::IndividualDifferentFromClause => unimplemented!(),
                 rule => unexpected_rule!(AnnotationPropertyFrame, rule),
+            }
+        }
+
+        Ok(frame)
+    }
+}
+
+impl<A: ForIRI> FromPair<A> for MiscFrame<A> {
+    const RULE: Rule = Rule::MiscFrame;
+    fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
+        let mut frame = MiscFrame::new();
+
+        for pair in pair.into_inner() {
+            debug_assert!(pair.as_rule() == Rule::MiscClause);
+            let inner = pair.into_inner().next().unwrap();
+            match inner.as_rule() {
+                Rule::MiscDifferentIndividualsClause => {
+                    let mut pairs = inner.into_inner();
+                    let mut pair = pairs.next().unwrap();
+                    let ann = axiom_annotations(&mut pair, &mut pairs, ctx)?;
+                    let individuals = pair
+                        .into_inner()
+                        .map(|pair| Individual::from_pair(pair, ctx))
+                        .collect::<Result<_>>()?;
+                    let axiom = DifferentIndividuals(individuals).into();
+                    frame.axioms.push(AnnotatedAxiom { ann, axiom })
+                }
+                rule => unexpected_rule!(MiscFrame, rule),
             }
         }
 

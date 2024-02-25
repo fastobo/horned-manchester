@@ -9,10 +9,12 @@ pub struct Frame<A: ForIRI, T> {
 }
 
 impl<A: ForIRI, T> Frame<A, T> {
+    #[allow(unused)]
     pub fn with_axioms(entity: T, axioms: Vec<AnnotatedAxiom<A>>) -> Self {
         Self { entity, axioms }
     }
 
+    #[allow(unused)]
     pub fn into_axioms(self) -> Vec<AnnotatedAxiom<A>> {
         self.axioms
     }
@@ -77,5 +79,21 @@ impl<A: ForIRI> From<Individual<A>> for IndividualFrame<A> {
             Individual::Named(ni) => vec![DeclareNamedIndividual(ni.clone()).into()],
         };
         Self { entity, axioms }
+    }
+}
+
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Default)]
+pub struct Misc;
+
+pub type MiscFrame<A> = Frame<A, Misc>;
+
+impl<A: ForIRI> MiscFrame<A> {
+    pub fn new() -> Self {
+        Self {
+            entity: Misc,
+            axioms: Vec::new(),
+        }
     }
 }

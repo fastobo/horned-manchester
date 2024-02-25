@@ -334,7 +334,7 @@ mod tests {
     #[test]
     fn misc() {
         assert_parse!(
-            Rule::Misc,
+            Rule::MiscClause,
             r#"DisjointClasses: Annotations: creator Jonh g:Rock, g:Scissor, g:Paper"#
         );
     }
@@ -488,6 +488,19 @@ mod tests {
             AnnotationProperty: <http://www.geneontology.org/formats/oboInOwl#date>
 
             AnnotationProperty: <http://www.geneontology.org/formats/oboInOwl#default-namespace>
+            "#
+        );
+        assert_parse!(
+            Rule::Ontology,
+            r#"
+            Ontology: <http://purl.obolibrary.org/obo/bspo.owl>
+                <http://purl.obolibrary.org/obo/bspo/releases/2023-05-27/bspo.owl>
+
+            Annotations: 
+                obo:IAO_0000700 <http://purl.obolibrary.org/obo/CARO_0000000>
+
+            DifferentIndividuals: 
+                obo:IAO_0000226,obo:IAO_0000227,obo:IAO_0000228,obo:IAO_0000229
             "#
         );
     }
