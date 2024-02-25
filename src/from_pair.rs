@@ -287,7 +287,10 @@ fn from_restriction_pair<A: ForIRI>(
             Ok(ClassExpression::ObjectAllValuesFrom { ope, bce })
         }
         Rule::ObjectHasValueRestriction => {
-            unimplemented!()
+            let mut pairs = inner.into_inner();
+            let ope = FromPair::from_pair(pairs.next().unwrap(), ctx)?;
+            let i = FromPair::from_pair(pairs.next().unwrap(), ctx)?;
+            Ok(ClassExpression::ObjectHasValue { ope, i })
         }
         Rule::ObjectHasSelfRestriction => {
             let mut pairs = inner.into_inner();
@@ -1132,7 +1135,21 @@ impl<A: ForIRI> FromPair<A> for DataPropertyFrame<A> {
                         }
                     )
                 }
-                Rule::DataPropertyCharacteristicsClause => unimplemented!(),
+                Rule::DataPropertyCharacteristicsClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let dp = frame.entity.clone();
+                            match descend(pair).as_rule() {
+                                Rule::FunctionalCharacteristic => FunctionalDataProperty(dp).into(),
+                                rule => unexpected_rule!(ObjectPropertyFrame, rule),
+                            }
+                        }
+                    )
+                }
                 Rule::DataPropertySubPropertyOfClause => {
                     annotated_axiom!(
                         pair,
