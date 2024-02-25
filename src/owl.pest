@@ -94,6 +94,8 @@ ObjectPropertyExpression2List = { ObjectPropertyExpression ~ (COMMA ~ ObjectProp
 DataPropertyExpression2List   = { DataPropertyExpression   ~ (COMMA ~ DataPropertyExpression)+ }
 Individual2List               = { Individual               ~ (COMMA ~ Individual)+ }
 
+BracketedObjectPropertyIRI = { LBRACKET ~ ObjectPropertyIRI ~ RBRACKET }
+
 
 // 2.1 IRIs, Integers, Literals and Entities
 
@@ -172,7 +174,7 @@ Frame             = { DatatypeFrame | ClassFrame | ObjectPropertyFrame | DataPro
 // 2.3 Property and Datatype Expressions
 
 ObjectPropertyExpression = { InverseObjectProperty | ObjectPropertyIRI }
-InverseObjectProperty    = { KEYWORD_INVERSE ~ ObjectPropertyIRI }
+InverseObjectProperty    = { KEYWORD_INVERSE ~ (BracketedObjectPropertyIRI | ObjectPropertyIRI)  }
 DataPropertyExpression   = { DataPropertyIRI }
 PropertyExpression       = { ObjectPropertyExpression | DataPropertyExpression }
 

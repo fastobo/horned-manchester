@@ -1365,13 +1365,25 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyExpression<A> {
     const RULE: Rule = Rule::ObjectPropertyExpression;
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
         let inner = descend(pair);
+        let span = inner.as_span();
         match inner.as_rule() {
             Rule::ObjectPropertyIRI => {
                 FromPair::from_pair(inner, ctx).map(ObjectPropertyExpression::ObjectProperty)
             }
             Rule::InverseObjectProperty => {
-                let pair = inner.into_inner().last().unwrap();
-                FromPair::from_pair(pair, ctx).map(ObjectPropertyExpression::InverseObjectProperty)
+                let pair = descend(inner);
+                let op = match pair.as_rule() {
+                    Rule::BracketedObjectPropertyIRI if ctx.strict => {
+                        return Err(Error::custom(
+                            "inverse object properties should not be bracketed",
+                            span,
+                        ));
+                    }
+                    Rule::BracketedObjectPropertyIRI => FromPair::from_pair(descend(pair), ctx)?,
+                    Rule::ObjectPropertyIRI => FromPair::from_pair(pair, ctx)?,
+                    rule => unexpected_rule!(ObjectPropertyExpression, rule),
+                };
+                Ok(ObjectPropertyExpression::InverseObjectProperty(op))
             }
             rule => unexpected_rule!(ObjectPropertyExpression, rule),
         }
@@ -1457,7 +1469,7 @@ mod tests {
     macro_rules! assert_parse_into {
         ($ty:ty, $rule:path, $build:ident, $prefixes:ident, $doc:expr, $expected:expr) => {
             let doc = $doc.trim();
-            let mut ctx = Context::<'_, String>::new(&$build, &$prefixes);
+            let ctx = Context::<'_, String>::new(&$build, &$prefixes);
             match OwlManchesterParser::parse($rule, doc) {
                 Ok(mut pairs) => {
                     let res = <$ty as FromPair<String>>::from_pair(pairs.next().unwrap(), &ctx);
