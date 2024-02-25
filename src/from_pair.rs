@@ -1036,9 +1036,9 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
                                 Rule::InverseObjectProperty => {
                                     // FIXME: currently unsupported in `horned-owl`
                                     return Err(Error::custom(
-                                    "InverseOf cannot contain inverse object property expression",
-                                    pair.as_span()
-                                ));
+                                        "InverseOf cannot contain inverse object property expression",
+                                        pair.as_span()
+                                    ));
                                 }
                                 rule => unexpected_rule!(ObjectPropertyExpression, rule),
                             };

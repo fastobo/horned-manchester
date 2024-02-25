@@ -140,9 +140,9 @@ Literal                   = {
     | StringLiteralWithLanguage 
     | StringLiteralNoLanguage 
     | BooleanLiteral                // NOTE: not part of the specification, but the OWL-API emits raw boolean tokens
+    | DecimalLiteral 
     | FloatingPointLiteral 
     | IntegerLiteral 
-    | DecimalLiteral 
 }
 
 Entity = {
