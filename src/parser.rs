@@ -276,6 +276,14 @@ mod tests {
     }
 
     #[test]
+    fn floating_point_literal() {
+        assert_parse!(Rule::FloatingPointLiteral, r#"1.0f"#);
+        assert_parse!(Rule::FloatingPointLiteral, r#"+3.14e0F"#);
+        assert_parse!(Rule::FloatingPointLiteral, r#".025f"#);
+        assert_parse!(Rule::FloatingPointLiteral, r#"-.01f"#);
+    }
+
+    #[test]
     fn import() {
         assert_parse!(Rule::Import, r#"Import: <http://ex.com/owl2/families.owl>"#);
     }
@@ -329,6 +337,7 @@ mod tests {
     fn literal() {
         assert_parse!(Rule::Literal, r#"2008"#);
         assert_parse!(Rule::Literal, r#"true"#);
+        assert_parse!(Rule::Literal, r#"1.0f"#);
     }
 
     #[test]
