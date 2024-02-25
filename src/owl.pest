@@ -133,7 +133,7 @@ QuotedString              = ${ DQUOTE ~ ( !DQUOTE ~ ("\\\\" | "\\\"" | ANY) )* ~
 FloatingPointLiteral      = ${ (PLUS | MINUS)? ~ ((Digits ~ (POINT ~ Digits)? ~ Exponent?) | (POINT ~ Digits ~ Exponent?)) ~ FloatSuffix }
 Exponent                  = ${ ("e" | "E") ~ (PLUS | MINUS)? ~ Digits }
 FloatSuffix               = ${ "f" | "F" }
-DecimalLiteral            = ${ (PLUS | MINUS)? ~ Digits ~ POINT ~ Digits }
+DecimalLiteral            = ${ (PLUS | MINUS)? ~ Digits ~ POINT ~ Digits ~ !FloatSuffix }
 IntegerLiteral            = ${ (PLUS | MINUS)? ~ Digits }
 Literal                   = { 
     TypedLiteral 
