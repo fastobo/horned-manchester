@@ -87,6 +87,7 @@ IRIAnnotatedList                          = { Annotations? ~ IRI                
 AnnotationPropertyIRIAnnotatedList        = { Annotations? ~ AnnotationPropertyIRI        ~ (COMMA ~ Annotations? ~ AnnotationPropertyIRI)* }
 FactAnnotatedList                         = { Annotations? ~ Fact                         ~ (COMMA ~ Annotations? ~ Fact)* }
 IndividualAnnotatedList                   = { Annotations? ~ Individual                   ~ (COMMA ~ Annotations? ~ Individual)* }
+DataRangeAnnotatedList                    = { Annotations? ~ DataRange                    ~ (COMMA ~ Annotations? ~ DataRange)* }
 
 Description2List              = { Description              ~ (COMMA ~ Description)+ }
 ObjectPropertyExpression2List = { ObjectPropertyExpression ~ (COMMA ~ ObjectPropertyExpression)+ }
@@ -299,14 +300,14 @@ ObjectPropertyCharacteristic = {
     | TransitiveCharacteristic
 }
 
-DataPropertyFrame = { (LIT_DATA_PROPERTY ~ COLON ~ DataPropertyIRI) ~ DataPropertyClause* }
-DataPropertyAnnotationsClause = { "Annotations:" ~ AnnotationAnnotatedList }
-DataPropertyDomainClause = { "Domain:" ~ DescriptionAnnotatedList }
-DataPropertyRangeClause = { "Range:" ~ DescriptionAnnotatedList }
+DataPropertyFrame                 = { ("DataProperty:" ~ DataPropertyIRI) ~ DataPropertyClause* }
+DataPropertyAnnotationsClause     = { "Annotations:" ~ AnnotationAnnotatedList }
+DataPropertyDomainClause          = { "Domain:" ~ DescriptionAnnotatedList }
+DataPropertyRangeClause           = { "Range:" ~ DataRangeAnnotatedList }
 DataPropertyCharacteristicsClause = { "Characteristics:" ~ DataPropertyCharacteristicAnnotatedList }
-DataPropertySubPropertyOfClause = { "SubPropertyOf:" ~ DataPropertyExpressionAnnotatedList }
-DataPropertyEquivalentToClause = { "EquivalentTo:" ~ DataPropertyExpressionAnnotatedList }
-DataPropertyDisjointWithClause = { "DisjointWith:" ~ DataPropertyExpressionAnnotatedList }
+DataPropertySubPropertyOfClause   = { "SubPropertyOf:" ~ DataPropertyExpressionAnnotatedList }
+DataPropertyEquivalentToClause    = { "EquivalentTo:" ~ DataPropertyExpressionAnnotatedList }
+DataPropertyDisjointWithClause    = { "DisjointWith:" ~ DataPropertyExpressionAnnotatedList }
 DataPropertyClause = {
     DataPropertyAnnotationsClause
     | DataPropertyDomainClause
@@ -350,14 +351,23 @@ Fact = { KEYWORD_NOT? ~ (ObjectPropertyFact | DataPropertyFact) }
 ObjectPropertyFact = { ObjectPropertyIRI ~ Individual }
 DataPropertyFact = { DataPropertyIRI ~ Literal }
 
+MiscEquivalentClassesClause          = { "EquivalentClasses:" ~ Annotations? ~ Description2List }
+MiscDisjointClassesClause            = { "DisjointClasses:" ~ Annotations? ~ Description2List }
+MiscEquivalentObjectPropertiesClause = { "EquivalentProperties:" ~ Annotations? ~ ObjectPropertyExpression2List }
+MiscDisjointObjectPropertiesClause   = { "DisjointProperties:" ~ Annotations? ~ ObjectPropertyExpression2List }
+MiscEquivalentDataPropertiesClause   = { "EquivalentProperties:" ~ Annotations? ~ DataPropertyExpression2List }
+MiscDisjointDataPropertiesClause     = { "DisjointProperties:" ~ Annotations? ~ DataPropertyExpression2List }
+MiscSameIndividualClause             = { "SameIndividual:" ~ Annotations? ~ Individual2List }
+MiscDifferentIndividualsClause       = { "DifferentIndividuals:" ~ Annotations? ~ Individual2List }
+MiscHasKeyClause                     = { "HasKey:" ~ Description ~ Annotations? ~ PropertyExpression+ }
 Misc = {
-        ("EquivalentClasses:" ~ Annotations? ~ Description2List)
-    |   ("DisjointClasses:" ~ Annotations? ~ Description2List)
-    |   ("EquivalentProperties:" ~ Annotations? ~ ObjectPropertyExpression2List)
-    |   ("DisjointProperties:" ~ Annotations? ~ ObjectPropertyExpression2List)
-    |   ("EquivalentProperties:" ~ Annotations? ~ DataPropertyExpression2List)
-    |   ("DisjointProperties:" ~ Annotations? ~ DataPropertyExpression2List)
-    |   ("SameIndividual:" ~ Annotations? ~ Individual2List)
-    |   ("DifferentIndividuals:" ~ Annotations? ~ Individual2List)
-    |   ("HasKey:" ~ Description ~ Annotations? ~ PropertyExpression+ )
+    MiscEquivalentClassesClause
+    | MiscDisjointClassesClause
+    | MiscEquivalentObjectPropertiesClause
+    | MiscDisjointObjectPropertiesClause
+    | MiscEquivalentDataPropertiesClause
+    | MiscDisjointDataPropertiesClause
+    | MiscSameIndividualClause
+    | MiscDifferentIndividualsClause
+    | MiscHasKeyClause
 }

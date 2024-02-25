@@ -1,4 +1,6 @@
 use std::collections::BTreeSet;
+use std::num::NonZeroU32;
+use std::str::FromStr;
 
 use curie::Curie;
 use curie::PrefixMapping;
@@ -130,7 +132,7 @@ impl<A: ForIRI> FromPair<A> for AnnotationValue<A> {
                 // FIXME: currently unsupported in `horned-owl`
                 Err(Error::custom(
                     "anonymous annotation targets are not supported",
-                    inner,
+                    inner.as_span(),
                 ))
             }
             Rule::IRI => {
@@ -177,6 +179,57 @@ fn from_restriction_pair<A: ForIRI>(
 ) -> Result<ClassExpression<A>> {
     debug_assert!(pair.as_rule() == Rule::Restriction);
 
+    macro_rules! data_cardinality {
+        ($inner:ident, $ctx:ident, ClassExpression:: $variant:ident) => {{
+            let span = $inner.as_span();
+            let mut pairs = $inner.into_inner();
+
+            let dp =
+                DataProperty::from_pair(pairs.next().unwrap().into_inner().next().unwrap(), $ctx)?;
+            let n = u32::from_pair(pairs.next().unwrap(), $ctx)?;
+
+            let dr = if let Some(pair) = pairs.next() {
+                DataRange::from_pair(pair, $ctx)?
+            } else {
+                // FIXME: currently unsupported in `horned-owl`
+                return Err(Error::custom(
+                    concat!(
+                        stringify!($variant),
+                        " without data range are not supported"
+                    ),
+                    span,
+                ));
+            };
+
+            Ok(ClassExpression::$variant { n, dp, dr })
+        }};
+    }
+
+    macro_rules! object_cardinality {
+        ($inner:ident, $ctx:ident, ClassExpression:: $variant:ident) => {{
+            let span = $inner.as_span();
+            let mut pairs = $inner.into_inner();
+
+            let ope = ObjectPropertyExpression::from_pair(pairs.next().unwrap(), $ctx)?;
+            let n = u32::from_pair(pairs.next().unwrap(), $ctx)?;
+
+            let bce = if let Some(pair) = pairs.next() {
+                from_primary_pair(pair, $ctx).map(Box::new)?
+            } else {
+                // FIXME: currently unsupported in `horned-owl`
+                return Err(Error::custom(
+                    concat!(
+                        stringify!($variant),
+                        " without class expression are not supported"
+                    ),
+                    span,
+                ));
+            };
+
+            Ok(ClassExpression::$variant { n, ope, bce })
+        }};
+    }
+
     let inner = pair.into_inner().next().unwrap();
     match inner.as_rule() {
         Rule::DataSomeValuesFromRestriction => {
@@ -186,19 +239,25 @@ fn from_restriction_pair<A: ForIRI>(
             Ok(ClassExpression::DataSomeValuesFrom { dp, dr })
         }
         Rule::DataAllValuesFromRestriction => {
-            unimplemented!()
+            let mut pairs = inner.into_inner();
+            let dp = FromPair::from_pair(pairs.next().unwrap().into_inner().next().unwrap(), ctx)?;
+            let dr = FromPair::from_pair(pairs.next().unwrap(), ctx)?;
+            Ok(ClassExpression::DataAllValuesFrom { dp, dr })
         }
         Rule::DataHasValueRestriction => {
-            unimplemented!()
+            let mut pairs = inner.into_inner();
+            let dp = FromPair::from_pair(pairs.next().unwrap().into_inner().next().unwrap(), ctx)?;
+            let l = FromPair::from_pair(pairs.next().unwrap(), ctx)?;
+            Ok(ClassExpression::DataHasValue { dp, l })
         }
         Rule::DataMinCardinalityRestriction => {
-            unimplemented!()
+            data_cardinality!(inner, ctx, ClassExpression::DataMinCardinality)
         }
         Rule::DataMaxCardinalityRestriction => {
-            unimplemented!()
+            data_cardinality!(inner, ctx, ClassExpression::DataMaxCardinality)
         }
         Rule::DataExactCardinalityRestriction => {
-            unimplemented!()
+            data_cardinality!(inner, ctx, ClassExpression::DataExactCardinality)
         }
         Rule::ObjectSomeValuesFromRestriction => {
             unimplemented!()
@@ -210,16 +269,18 @@ fn from_restriction_pair<A: ForIRI>(
             unimplemented!()
         }
         Rule::ObjectHasSelfRestriction => {
-            unimplemented!()
+            let mut pairs = inner.into_inner();
+            let ope = FromPair::from_pair(pairs.next().unwrap(), ctx)?;
+            Ok(ClassExpression::ObjectHasSelf(ope))
         }
         Rule::ObjectMinCardinalityRestriction => {
-            unimplemented!()
+            object_cardinality!(inner, ctx, ClassExpression::ObjectMinCardinality)
         }
         Rule::ObjectMaxCardinalityRestriction => {
-            unimplemented!()
+            object_cardinality!(inner, ctx, ClassExpression::ObjectMaxCardinality)
         }
         Rule::ObjectExactCardinalityRestriction => {
-            unimplemented!()
+            object_cardinality!(inner, ctx, ClassExpression::ObjectExactCardinality)
         }
         rule => unexpected_rule!(ClassExpression, rule),
     }
@@ -325,11 +386,11 @@ impl<A: ForIRI> FromPair<A> for ClassExpression<A> {
 
 // ---------------------------------------------------------------------------
 
-fn from_data_conjuction_pair<A: ForIRI>(
+fn from_data_conjunction_pair<A: ForIRI>(
     pair: Pair<Rule>,
     ctx: &Context<'_, A>,
 ) -> Result<DataRange<A>> {
-    debug_assert!(pair.as_rule() == Rule::DataRange);
+    debug_assert!(pair.as_rule() == Rule::DataConjunction);
 
     let mut ranges = pair
         .into_inner()
@@ -347,7 +408,7 @@ fn from_data_range_pair<A: ForIRI>(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Re
 
     let mut ranges = pair
         .into_inner()
-        .map(|pair| from_data_conjuction_pair(pair, ctx))
+        .map(|pair| from_data_conjunction_pair(pair, ctx))
         .collect::<Result<Vec<_>>>()?;
     if ranges.len() == 1 {
         Ok(ranges.pop().unwrap())
@@ -576,6 +637,22 @@ impl<A: ForIRI> FromPair<A> for SetOntology<A> {
                     AnnotationPropertyFrame::from_pair(inner, ctx)?.into_axioms()
                 }
                 Rule::IndividualFrame => IndividualFrame::from_pair(inner, ctx)?.into_axioms(),
+                Rule::Misc => {
+                    let inner = inner.into_inner().next().unwrap();
+                    let axiom = match inner.as_rule() {
+                        Rule::MiscEquivalentClassesClause => unimplemented!(),
+                        Rule::MiscDisjointClassesClause => unimplemented!(),
+                        Rule::MiscEquivalentObjectPropertiesClause => unimplemented!(),
+                        Rule::MiscDisjointObjectPropertiesClause => unimplemented!(),
+                        Rule::MiscEquivalentDataPropertiesClause => unimplemented!(),
+                        Rule::MiscDisjointDataPropertiesClause => unimplemented!(),
+                        Rule::MiscSameIndividualClause => unimplemented!(),
+                        Rule::MiscDifferentIndividualsClause => unimplemented!(),
+                        Rule::MiscHasKeyClause => unimplemented!(),
+                        rule => unexpected_rule!(ClassFrame, rule),
+                    };
+                    vec![axiom]
+                }
                 rule => unexpected_rule!(ClassFrame, rule),
             };
             for axiom in axioms {
@@ -932,7 +1009,7 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
                                     // FIXME: currently unsupported in `horned-owl`
                                     return Err(Error::custom(
                                     "InverseOf cannot contain inverse object property expression",
-                                    pair
+                                    pair.as_span()
                                 ));
                                 }
                                 rule => unexpected_rule!(ObjectPropertyExpression, rule),
@@ -965,8 +1042,79 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
 
 impl<A: ForIRI> FromPair<A> for DataPropertyFrame<A> {
     const RULE: Rule = Rule::DataPropertyFrame;
-    fn from_pair_unchecked(_pair: Pair<Rule>, _ctx: &Context<'_, A>) -> Result<Self> {
-        unimplemented!()
+    fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
+        let mut pairs = pair.into_inner();
+
+        let dt = DataProperty::from_pair(pairs.next().unwrap(), ctx)?;
+        let mut frame = DataPropertyFrame::from(dt);
+
+        for pair in pairs {
+            debug_assert!(pair.as_rule() == Rule::DataPropertyClause);
+            let inner = pair.into_inner().next().unwrap();
+            match inner.as_rule() {
+                Rule::DataPropertyAnnotationsClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let ann = FromPair::from_pair(pair, ctx)?;
+                            let subject = AnnotationSubject::IRI(frame.entity.0.clone());
+                            AnnotationAssertion { subject, ann }.into()
+                        }
+                    )
+                }
+                Rule::DataPropertyDomainClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let dp = frame.entity.clone();
+                            let ce = FromPair::from_pair(pair, ctx)?;
+                            DataPropertyDomain { dp, ce }.into()
+                        }
+                    )
+                }
+                Rule::DataPropertyRangeClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let dp = frame.entity.clone();
+                            let dr = from_data_range_pair(pair, ctx)?;
+                            DataPropertyRange { dp, dr }.into()
+                        }
+                    )
+                }
+                Rule::DataPropertyCharacteristicsClause => unimplemented!(),
+                Rule::DataPropertySubPropertyOfClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let inner = pair.into_inner().next().unwrap();
+                            SubDataPropertyOf {
+                                sup: DataProperty::from_pair(inner, ctx)?,
+                                sub: frame.entity.clone(),
+                            }
+                            .into()
+                        }
+                    )
+                }
+                Rule::DataPropertyEquivalentToClause => unimplemented!(),
+                Rule::DataPropertyDisjointWithClause => unimplemented!(),
+                rule => unexpected_rule!(DataPropertyFrame, rule),
+            }
+        }
+
+        Ok(frame)
     }
 }
 
@@ -1046,8 +1194,55 @@ impl<A: ForIRI> FromPair<A> for AnnotationPropertyFrame<A> {
 
 impl<A: ForIRI> FromPair<A> for IndividualFrame<A> {
     const RULE: Rule = Rule::IndividualFrame;
-    fn from_pair_unchecked(_pair: Pair<Rule>, _ctx: &Context<'_, A>) -> Result<Self> {
-        unimplemented!()
+    fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
+        let mut pairs = pair.into_inner();
+
+        let individual = Individual::from_pair(pairs.next().unwrap(), ctx)?;
+        let mut frame = IndividualFrame::from(individual);
+
+        for pair in pairs {
+            debug_assert!(pair.as_rule() == Rule::IndividualClause);
+            let inner = pair.into_inner().next().unwrap();
+            match inner.as_rule() {
+                Rule::IndividualAnnotationsClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let ann = FromPair::from_pair(pair, ctx)?;
+                            let subject = match &frame.entity {
+                                Individual::Anonymous(anon) => {
+                                    AnnotationSubject::AnonymousIndividual(anon.clone())
+                                }
+                                Individual::Named(anon) => AnnotationSubject::IRI(anon.0.clone()),
+                            };
+                            AnnotationAssertion { subject, ann }.into()
+                        }
+                    )
+                }
+                Rule::IndividualTypesClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let i = frame.entity.clone();
+                            let ce = ClassExpression::from_pair(pair, ctx)?;
+                            ClassAssertion { ce, i }.into()
+                        }
+                    )
+                }
+                Rule::IndividualFactsClause => unimplemented!(),
+                Rule::IndividualSameAsClause => unimplemented!(),
+                Rule::IndividualDifferentFromClause => unimplemented!(),
+                rule => unexpected_rule!(AnnotationPropertyFrame, rule),
+            }
+        }
+
+        Ok(frame)
     }
 }
 
@@ -1137,6 +1332,21 @@ impl<A: ForIRI> FromPair<A> for String {
         let l = pair.as_str().len();
         let s = &pair.as_str()[1..l - 1];
         Ok(s.replace(r"\\", r"\").replace(r#"\""#, r#"""#))
+    }
+}
+
+impl<A: ForIRI> FromPair<A> for u32 {
+    const RULE: Rule = Rule::NonNegativeInteger;
+    fn from_pair_unchecked(pair: Pair<Rule>, _ctx: &Context<'_, A>) -> Result<Self> {
+        Ok(Self::from_str(pair.as_str()).expect("cannot fail with the right rule"))
+    }
+}
+
+impl<A: ForIRI> FromPair<A> for NonZeroU32 {
+    const RULE: Rule = Rule::PositiveInteger;
+    fn from_pair_unchecked(pair: Pair<Rule>, _ctx: &Context<'_, A>) -> Result<Self> {
+        let n = u32::from_str(pair.as_str()).expect("cannot fail with the right rule");
+        Ok(Self::new(n).expect("cannot be zero with the right rule"))
     }
 }
 

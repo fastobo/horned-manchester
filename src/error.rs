@@ -1,5 +1,5 @@
 use super::parser::Rule;
-use pest::iterators::Pair;
+use pest::Span;
 
 /// The result type for this crate.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -74,12 +74,12 @@ pub enum Error {
 
 impl Error {
     // Create a custom `pest` error spanning the given pair.
-    pub fn custom<S: Into<String>>(message: S, pair: Pair<Rule>) -> Self {
+    pub fn custom<S: Into<String>>(message: S, span: Span) -> Self {
         Self::from(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError {
                 message: message.into(),
             },
-            pair.as_span(),
+            span,
         ))
     }
 }
