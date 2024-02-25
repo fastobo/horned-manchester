@@ -448,7 +448,7 @@ impl<A: ForIRI> FromPair<A> for DataRange<A> {
             Rule::DataAtomic => from_data_atomic_pair(inner, ctx),
             Rule::DataAtomicComplement => {
                 let pair = inner.into_inner().next().unwrap();
-                Self::from_pair(pair, ctx)
+                from_data_atomic_pair(pair, ctx)
                     .map(Box::new)
                     .map(DataRange::DataComplementOf)
             }
