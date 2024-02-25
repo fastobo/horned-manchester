@@ -593,7 +593,15 @@ impl<A: ForIRI> FromPair<A> for Literal<A> {
             Rule::IntegerLiteral => xsd_literal!(pair, ctx, xsd:integer),
             Rule::DecimalLiteral => xsd_literal!(pair, ctx, xsd:decimal),
             Rule::FloatingPointLiteral => xsd_literal!(pair, ctx, xsd:float),
-            Rule::BooleanLiteral => xsd_literal!(pair, ctx, xsd:boolean),
+            Rule::BooleanLiteral => {
+                if ctx.strict {
+                    return Err(Error::custom(
+                        "boolean literals are not allowed",
+                        pair.as_span(),
+                    ));
+                }
+                xsd_literal!(pair, ctx, xsd:boolean)
+            }
             rule => unexpected_rule!(Literal, rule),
         }
     }
@@ -1444,7 +1452,7 @@ mod tests {
     macro_rules! assert_parse_into {
         ($ty:ty, $rule:path, $build:ident, $prefixes:ident, $doc:expr, $expected:expr) => {
             let doc = $doc.trim();
-            let ctx = Context::<'_, String>::new(&$build, &$prefixes);
+            let mut ctx = Context::<'_, String>::new(&$build, &$prefixes);
             match OwlManchesterParser::parse($rule, doc) {
                 Ok(mut pairs) => {
                     let res = <$ty as FromPair<String>>::from_pair(pairs.next().unwrap(), &ctx);
