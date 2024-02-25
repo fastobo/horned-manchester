@@ -261,10 +261,16 @@ fn from_restriction_pair<A: ForIRI>(
             data_cardinality!(inner, ctx, ClassExpression::DataExactCardinality)
         }
         Rule::ObjectSomeValuesFromRestriction => {
-            unimplemented!()
+            let mut pairs = inner.into_inner();
+            let ope = FromPair::from_pair(pairs.next().unwrap(), ctx)?;
+            let bce = from_primary_pair(pairs.next().unwrap(), ctx).map(Box::new)?;
+            Ok(ClassExpression::ObjectSomeValuesFrom { ope, bce })
         }
         Rule::ObjectAllValuesFromRestriction => {
-            unimplemented!()
+            let mut pairs = inner.into_inner();
+            let ope = FromPair::from_pair(pairs.next().unwrap(), ctx)?;
+            let bce = from_primary_pair(pairs.next().unwrap(), ctx).map(Box::new)?;
+            Ok(ClassExpression::ObjectAllValuesFrom { ope, bce })
         }
         Rule::ObjectHasValueRestriction => {
             unimplemented!()
@@ -1241,6 +1247,13 @@ impl<A: ForIRI> FromPair<A> for MiscFrame<A> {
             debug_assert!(pair.as_rule() == Rule::MiscClause);
             let inner = pair.into_inner().next().unwrap();
             match inner.as_rule() {
+                Rule::MiscEquivalentClassesClause => unimplemented!(),
+                Rule::MiscDisjointClassesClause => unimplemented!(),
+                Rule::MiscEquivalentObjectPropertiesClause => unimplemented!(),
+                Rule::MiscDisjointObjectPropertiesClause => unimplemented!(),
+                Rule::MiscEquivalentDataPropertiesClause => unimplemented!(),
+                Rule::MiscDisjointDataPropertiesClause => unimplemented!(),
+                Rule::MiscSameIndividualClause => unimplemented!(),
                 Rule::MiscDifferentIndividualsClause => {
                     let mut pairs = inner.into_inner();
                     let mut pair = pairs.next().unwrap();
@@ -1252,6 +1265,7 @@ impl<A: ForIRI> FromPair<A> for MiscFrame<A> {
                     let axiom = DifferentIndividuals(individuals).into();
                     frame.axioms.push(AnnotatedAxiom { ann, axiom })
                 }
+                Rule::MiscHasKeyClause => unimplemented!(),
                 rule => unexpected_rule!(MiscFrame, rule),
             }
         }
