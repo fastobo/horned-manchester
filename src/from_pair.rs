@@ -553,14 +553,19 @@ impl<A: ForIRI> FromPair<A> for Literal<A> {
             ($pair:ident, $ctx:ident, xsd: $datatype:expr) => {{
                 let literal = $pair.as_str().to_string();
                 let curie = Curie::new(Some("xsd"), stringify!($datatype));
-                let datatype_iri = if let Some(prefixes) = $ctx.prefixes {
-                    prefixes
-                        .expand_curie(&curie)
-                        .map_err(Error::from)
-                        .map(|s| $ctx.iri(s))?
-                } else {
-                    return Err(Error::from(curie::ExpansionError::Invalid));
-                };
+                let datatype_iri = $ctx
+                    .prefixes
+                    .as_ref()
+                    .and_then(|prefixes| {
+                        let curie = Curie::new(Some("xsd"), stringify!($datatype));
+                        prefixes.expand_curie(&curie).ok().map(|x| $ctx.iri(x))
+                    })
+                    .unwrap_or_else(|| {
+                        $ctx.iri(concat!(
+                            "http://www.w3.org/2001/XMLSchema#",
+                            stringify!($datatype)
+                        ))
+                    });
                 Ok(Literal::Datatype {
                     literal,
                     datatype_iri,
