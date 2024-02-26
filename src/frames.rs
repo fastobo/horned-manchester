@@ -102,3 +102,28 @@ impl<A: ForIRI> From<AnnotatedAxiom<A>> for MiscClause<A> {
         MiscClause::new(axiom)
     }
 }
+
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone)]
+pub struct InverseObjectPropertyFrame<A: ForIRI> {
+    pub entity: ObjectPropertyExpression<A>,
+    pub axioms: Vec<AnnotatedAxiom<A>>,
+}
+
+impl<A: ForIRI> InverseObjectPropertyFrame<A> {
+    pub fn new(entity: ObjectPropertyExpression<A>) -> Self {
+        let axioms = Vec::new();
+        Self { entity, axioms }
+    }
+
+    pub fn into_axioms(self) -> Vec<AnnotatedAxiom<A>> {
+        self.axioms
+    }
+}
+
+impl<A: ForIRI> From<ObjectPropertyExpression<A>> for InverseObjectPropertyFrame<A> {
+    fn from(ope: ObjectPropertyExpression<A>) -> Self {
+        Self::new(ope)
+    }
+}

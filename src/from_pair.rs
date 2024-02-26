@@ -16,7 +16,7 @@ use crate::frames::ClassFrame;
 use crate::frames::DataPropertyFrame;
 use crate::frames::DatatypeFrame;
 use crate::frames::MiscClause;
-
+use crate::frames::InverseObjectPropertyFrame;
 use crate::frames::IndividualFrame;
 use crate::frames::ObjectPropertyFrame;
 use crate::parser::Rule;
@@ -721,6 +721,9 @@ impl<A: ForIRI> FromPair<A> for SetOntology<A> {
                 Rule::ObjectPropertyFrame => {
                     ObjectPropertyFrame::from_pair(inner, ctx)?.into_axioms()
                 }
+                Rule::InverseObjectPropertyFrame => {
+                    InverseObjectPropertyFrame::from_pair(inner, ctx)?.into_axioms()
+                }
                 Rule::DataPropertyFrame => DataPropertyFrame::from_pair(inner, ctx)?.into_axioms(),
                 Rule::AnnotationPropertyFrame => {
                     AnnotationPropertyFrame::from_pair(inner, ctx)?.into_axioms()
@@ -1101,6 +1104,62 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyFrame<A> {
                     frame.axioms.push(AnnotatedAxiom { ann, axiom });
                 }
                 rule => unexpected_rule!(ObjectPropertyFrame, rule),
+            }
+        }
+
+        Ok(frame)
+    }
+}
+
+impl<A: ForIRI> FromPair<A> for InverseObjectPropertyFrame<A> {
+    const RULE: Rule = Rule::InverseObjectPropertyFrame;
+    fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
+        let mut pairs = pair.into_inner();
+
+        let mut pair = descend(pairs.next().unwrap());
+        if pair.as_rule() == Rule::BracketedObjectPropertyIRI {
+            pair = descend(pair);
+        }
+
+        let op = ObjectProperty::from_pair(pair, ctx)?;
+        let ope = ObjectPropertyExpression::InverseObjectProperty(op);
+        let mut frame = InverseObjectPropertyFrame::from(ope);
+
+        for pair in pairs {
+            debug_assert!(pair.as_rule() == Rule::InverseObjectPropertyClause);
+            let inner = descend(pair);
+            match inner.as_rule() {
+                Rule::InverseObjectPropertyEquivalentToClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            EquivalentObjectProperties(vec![
+                                frame.entity.clone(),
+                                ObjectPropertyExpression::from_pair(pair, ctx)?,
+                            ])
+                            .into()
+                        }
+                    )
+                }
+                Rule::InverseObjectPropertyDisjointWithClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            DisjointObjectProperties(vec![
+                                frame.entity.clone(),
+                                ObjectPropertyExpression::from_pair(pair, ctx)?,
+                            ])
+                            .into()
+                        }
+                    )
+                }
+                rule => unexpected_rule!(InverseObjectPropertyFrame, rule),
             }
         }
 

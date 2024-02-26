@@ -169,7 +169,16 @@ Ontology          = { "Ontology:" ~ OntologyID? ~ Import* ~ Annotations* ~ Frame
 OntologyID        = { IRI ~ IRI? }
 Import            = { "Import:" ~ ImportIRI }
 ImportIRI         = { IRI }
-Frame             = { DatatypeFrame | ClassFrame | ObjectPropertyFrame | DataPropertyFrame | AnnotationPropertyFrame | IndividualFrame | MiscClause }
+Frame             = { 
+    DatatypeFrame 
+    | ClassFrame 
+    | InverseObjectPropertyFrame
+    | ObjectPropertyFrame 
+    | DataPropertyFrame 
+    | AnnotationPropertyFrame 
+    | IndividualFrame 
+    | MiscClause 
+}
 
 
 // 2.3 Property and Datatype Expressions
@@ -397,6 +406,20 @@ MiscClause = {
     | MiscDifferentIndividualsClause
     | MiscRuleClause
 }
+
+// NOTE: This particular construct is not legal according to the OWL2 Manchester
+//       syntax, but it is actually emitted by the OWL API instead of using the 
+//       `DisjointProperties` and `EquivalentProperties` miscellaneous clauses 
+//       to mark object property disjunction or equivalence:
+//
+//       ObjectProperty:  inverse (obo:OBI_0000312)
+//          EquivalentTo: 
+//              obo:OBI_0000299 
+
+InverseObjectPropertyFrame              = { "ObjectProperty:" ~ InverseObjectProperty ~ InverseObjectPropertyClause }
+InverseObjectPropertyEquivalentToClause = { "EquivalentTo:" ~ ObjectPropertyExpressionAnnotatedList }
+InverseObjectPropertyDisjointWithClause = { "DisjointWith:" ~ ObjectPropertyExpressionAnnotatedList }
+InverseObjectPropertyClause             = { InverseObjectPropertyEquivalentToClause | InverseObjectPropertyDisjointWithClause }
 
 
 // Annex: SWRL Rules
