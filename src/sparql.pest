@@ -1,14 +1,11 @@
-// Annex I: SPARQL Grammar Subset
+// Annex I: SPARQL 1.0 Grammar Subset
+// (source: https://www.w3.org/TR/2008/REC-rdf-sparql-query-20080115/)
 
 SPARQL_BlankNodeLabel = ${ "_:" ~ SPARQL_PnLocal }
 SPARQL_PnameNs = ${ SPARQL_PnPrefix? ~ ":" }
 SPARQL_PnameLn = ${ SPARQL_PnameNs ~ SPARQL_PnLocal }
 
-// NOTE: In the SPARQL grammar a local identifier can contain or end with a
-//       semicolon, however this conflicts with most of the rules including
-//       several keyword terminals, so I made it so that the rule only accepts
-//       escaped semi-colons.
-SPARQL_PnLocal        = @{ (SPARQL_PnCharsU | ":" | ASCII_DIGIT | SPARQL_Plx) ~ (("." ~ (SPARQL_PnChars | SPARQL_Plx)) | SPARQL_PnChars | SPARQL_Plx)* }
+SPARQL_PnLocal        = @{ (SPARQL_PnCharsU | ASCII_DIGIT) ~ (("." ~ SPARQL_PnChars) | SPARQL_PnChars)* }
 SPARQL_PnPrefix       = @{ SPARQL_PnCharsBase ~ (("." ~ SPARQL_PnChars) | SPARQL_PnChars)* }
 
 SPARQL_PnChars = @{ SPARQL_PnCharsU | "-" | ASCII_DIGIT | "\u{00B7}" | '\u{0300}'..'\u{036F}' |  '\u{203F}'..'\u{2040}' }
@@ -18,13 +15,4 @@ SPARQL_PnCharsBase = @{
   | '\u{0370}'..'\u{037D}' | '\u{037F}'..'\u{1FFF}' | '\u{200C}'..'\u{200D}' | '\u{2070}'..'\u{218F}'
   | '\u{2C00}'..'\u{2FEF}' | '\u{3001}'..'\u{D7FF}' | '\u{F900}'..'\u{FDCF}' | '\u{FDF0}'..'\u{FFFD}'
   | '\u{10000}'..'\u{EFFFF}'
-}
-
-SPARQL_Plx            = @{ SPARQL_Percent | SPARQL_PnLocalEsc }
-SPARQL_Percent        = @{ "%" ~ SPARQL_Hex ~ SPARQL_Hex }
-SPARQL_Hex            = @{ ASCII_HEX_DIGIT }
-
-SPARQL_PnLocalEsc     = @{ "\\" ~ SPARQL_PnLocalEscChar }
-SPARQL_PnLocalEscChar = @{
-  "_" | "~" | "." | "-" | "!" | "$" | "&" | "\"" | "(" | ")" | "*" | "+" | "," | ";" | "=" | "/" | "?" | "#" | "@" | "%" | ":"
 }

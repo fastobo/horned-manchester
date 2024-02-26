@@ -1,4 +1,5 @@
-// Annex III: Language Tag Grammar from [BCP47]
+// Annex III: Language Tag Grammar from BCP 47
+// (source: https://www.rfc-editor.org/bcp/bcp47.txt)
 
 BCP47_LanguageTag = ${ BCP47_LangTag | BCP47_PrivateUse | BCP47_GrandFathered }
 BCP47_LangTag = ${

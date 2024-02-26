@@ -1,4 +1,5 @@
-// Annex II: Iri Grammar from [RFC3987]
+// Annex II: Iri Grammar from IRI RFC
+// (source: https://www.ietf.org/rfc/rfc3987.txt)
 
 RFC3987_Iri = @{ RFC3987_IriScheme ~ ":" ~ RFC3987_IriHierPart ~ ("?" ~ RFC3987_IriQuery)? ~ ("#" ~ RFC3987_IriFragment)? }
 
