@@ -334,6 +334,13 @@ mod tests {
     }
 
     #[test]
+    fn iri() {
+        assert_parse!(Rule::IRI, r#"owl:deprecated"#);
+        assert_parse!(Rule::IRI, r#"John"#);
+        assert_parse!(Rule::IRI, r#"<https://en.wiktionary.org/wiki/Ῥόδος>"#);
+    }
+
+    #[test]
     fn literal() {
         assert_parse!(Rule::Literal, r#"2008"#);
         assert_parse!(Rule::Literal, r#"true"#);

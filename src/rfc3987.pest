@@ -39,7 +39,26 @@ RFC3987_IriPort       = @{ ASCII_DIGIT* }
 
 RFC3987_IriPrivate    = ${ '\u{E000}'..'\u{F8FF}' | '\u{F0000}'..'\u{FFFFD}' | '\u{100000}'..'\u{10FFFD}' }
 RFC3987_IriPctEncoded = ${ "%" ~ ASCII_HEX_DIGIT ~ ASCII_HEX_DIGIT }
-RFC3987_IriUnreserved = @{ ASCII_ALPHA | ASCII_DIGIT | "-" | "." | "_" | "~" }
+RFC3987_IriUnreserved = @{ ASCII_ALPHA | ASCII_DIGIT | "-" | "." | "_" | "~" | RFC3987_IriUCSChar }
+RFC3987_IriUCSChar    = ${
+    '\u{a0}' .. '\u{d7ff}'
+  | '\u{f900}' .. '\u{fdcf}'
+  | '\u{fdf0}' .. '\u{ffef}'
+  | '\u{10000}' .. '\u{1fffd}'
+  | '\u{20000}' .. '\u{2fffd}'
+  | '\u{30000}' .. '\u{3fffd}'
+  | '\u{40000}' .. '\u{4fffd}'
+  | '\u{50000}' .. '\u{5fffd}'
+  | '\u{60000}' .. '\u{6fffd}'
+  | '\u{70000}' .. '\u{7fffd}'
+  | '\u{80000}' .. '\u{8fffd}'
+  | '\u{90000}' .. '\u{9fffd}'
+  | '\u{a0000}' .. '\u{afffd}'
+  | '\u{b0000}' .. '\u{bfffd}'
+  | '\u{c0000}' .. '\u{cfffd}'
+  | '\u{d0000}' .. '\u{dfffd}'
+  | '\u{e1000}' .. '\u{efffd}'
+}
 RFC3987_IriReserved   = @{ RFC3987_IriGenDelims | RFC3987_IriSubDelims }
 RFC3987_IriGenDelims  = @{":" | "/" | "?" | "#" | "[" | "]" | "@"}
 RFC3987_IriSubDelims  = @{"!" | "$" | "&" | "'" | "(" | ")" | "*" | "+" | ";" | "=" | "," }
