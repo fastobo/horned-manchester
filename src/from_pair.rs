@@ -1166,8 +1166,36 @@ impl<A: ForIRI> FromPair<A> for DataPropertyFrame<A> {
                         }
                     )
                 }
-                Rule::DataPropertyEquivalentToClause => unimplemented!(),
-                Rule::DataPropertyDisjointWithClause => unimplemented!(),
+                Rule::DataPropertyEquivalentToClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            EquivalentDataProperties(vec![
+                                frame.entity.clone(),
+                                DataProperty::from_pair(descend(pair), ctx)?,
+                            ])
+                            .into()
+                        }
+                    )
+                }
+                Rule::DataPropertyDisjointWithClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            DisjointDataProperties(vec![
+                                frame.entity.clone(),
+                                DataProperty::from_pair(descend(pair), ctx)?,
+                            ])
+                            .into()
+                        }
+                    )
+                }
                 rule => unexpected_rule!(DataPropertyFrame, rule),
             }
         }
