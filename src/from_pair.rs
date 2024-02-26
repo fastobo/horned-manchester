@@ -1480,7 +1480,6 @@ impl<A: ForIRI> FromPair<A> for MiscClause<A> {
             Rule::MiscDifferentIndividualsClause => {
                 entity_list!(inner, ctx, DifferentIndividuals)
             }
-            Rule::MiscHasKeyClause => unimplemented!(),
             rule => unexpected_rule!(MiscClause, rule),
         }
     }

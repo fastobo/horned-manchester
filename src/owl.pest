@@ -385,7 +385,6 @@ MiscEquivalentDataPropertiesClause   = { "EquivalentProperties:" ~ Annotations? 
 MiscDisjointDataPropertiesClause     = { "DisjointProperties:" ~ Annotations? ~ DataPropertyExpression2List }
 MiscSameIndividualClause             = { "SameIndividual:" ~ Annotations? ~ Individual2List }
 MiscDifferentIndividualsClause       = { "DifferentIndividuals:" ~ Annotations? ~ Individual2List }
-MiscHasKeyClause                     = { "HasKey:" ~ Description ~ Annotations? ~ PropertyExpression+ }
 MiscClause = {
     MiscEquivalentClassesClause
     | MiscDisjointClassesClause
@@ -395,5 +394,4 @@ MiscClause = {
     | MiscDisjointDataPropertiesClause
     | MiscSameIndividualClause
     | MiscDifferentIndividualsClause
-    | MiscHasKeyClause
 }
