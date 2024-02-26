@@ -453,7 +453,7 @@ fn from_data_atomic_pair<A: ForIRI>(
     let inner = descend(pair);
     match inner.as_rule() {
         Rule::DataRange => from_data_range_pair(inner, ctx),
-        Rule::DatatypeRestriction => unimplemented!(),
+        Rule::DatatypeRestriction => from_datatype_restriction_pair(inner, ctx),
         Rule::Datatype => {
             let datatype = Datatype::from_pair(inner, ctx)?;
             Ok(DataRange::Datatype(datatype))
@@ -464,6 +464,15 @@ fn from_data_atomic_pair<A: ForIRI>(
         }
         rule => unexpected_rule!(DataRange, rule),
     }
+}
+
+fn from_datatype_restriction_pair<A: ForIRI>(
+    pair: Pair<Rule>,
+    ctx: &Context<'_, A>,
+) -> Result<DataRange<A>> {
+    debug_assert!(pair.as_rule() == Rule::DatatypeRestriction);
+
+    unimplemented!()
 }
 
 impl<A: ForIRI> FromPair<A> for DataRange<A> {
@@ -1550,7 +1559,11 @@ impl<A: ForIRI> FromPair<A> for String {
     fn from_pair_unchecked(pair: Pair<Rule>, _ctx: &Context<'_, A>) -> Result<Self> {
         let l = pair.as_str().len();
         let s = &pair.as_str()[1..l - 1];
-        Ok(s.replace(r"\\", r"\").replace(r#"\""#, r#"""#))
+        if s.contains(r"\\") || s.contains(r#"\""#) {
+            Ok(s.replace(r"\\", r"\").replace(r#"\""#, r#"""#))
+        } else {
+            Ok(s.to_string())
+        }
     }
 }
 
