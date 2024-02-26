@@ -173,7 +173,7 @@ impl<A: ForIRI> FromPair<A> for BTreeSet<Annotation<A>> {
                     annotations.insert(annotation);
                 }
                 Rule::Annotations => {
-                    unimplemented!("nested annotation lists not supported")
+                    unreachable!("nested annotation lists should not be encountered")
                 }
                 rule => unexpected_rule!(BTreeSet, rule),
             }
@@ -491,7 +491,7 @@ impl<A: ForIRI> FromPair<A> for DataRange<A> {
 
 impl<A: ForIRI> FromPair<A> for Facet {
     const RULE: Rule = Rule::FacetRestriction;
-    fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
+    fn from_pair_unchecked(pair: Pair<Rule>, _ctx: &Context<'_, A>) -> Result<Self> {
         let inner = descend(pair);
         let facet = match inner.as_rule() {
             Rule::FacetLength => Facet::Length,
@@ -913,27 +913,18 @@ impl<A: ForIRI> FromPair<A> for ClassFrame<A> {
                     frame.axioms.push(AnnotatedAxiom { axiom, ann })
                 }
                 Rule::ClassHasKeyClause => {
-                    // let mut value = inner.next().unwrap().into_inner();
-                    // let mut pair = value.next().unwrap();
-
-                    // let annotations;
-                    // if pair.as_rule() == Rule::Annotations {
-                    //     annotations = FromPair::from_pair(pair, ctx)?;
-                    //     pair = value.next().unwrap();
-                    // } else {
-                    //     annotations = BTreeSet::new();
-                    // }
-                    // let has_key = HasKey {
-                    //     ce: ClassExpression::Class(frame.class.clone()),
-                    //     vpe: ClassExpression::from_pair(pair, ctx)?,
-                    // ]);
-                    // frame.axioms.push(
-                    //     AnnotatedAxiom {
-                    //         axiom: Axiom::DisjointClasses(disjoint_classes),
-                    //         ann: annotations,
-                    //     }
-                    // );
-                    unimplemented!()
+                    let mut value = inner.into_inner().peekable();
+                    let ann = if value.peek().unwrap().as_rule() == Rule::Annotations {
+                        FromPair::from_pair(value.next().unwrap(), ctx)?
+                    } else {
+                        Default::default()
+                    };
+                    let ce = ClassExpression::Class(frame.entity.clone());
+                    let vpe = value
+                        .map(|pair| FromPair::from_pair(pair, ctx))
+                        .collect::<Result<Vec<_>>>()?;
+                    let axiom = HasKey { ce, vpe }.into();
+                    frame.axioms.push(AnnotatedAxiom { axiom, ann });
                 }
                 rule => unexpected_rule!(ClassFrame, rule),
             }
