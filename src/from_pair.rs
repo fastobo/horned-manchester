@@ -728,7 +728,7 @@ impl<A: ForIRI> FromPair<A> for SetOntology<A> {
                 Rule::IndividualFrame => IndividualFrame::from_pair(inner, ctx)?.into_axioms(),
                 Rule::MiscClause => {
                     let clause = MiscClause::from_pair(inner, ctx)?;
-                    vec![clause.into()]
+                    clause.0.map(|axiom| vec![axiom]).unwrap_or_default()
                 }
                 rule => unexpected_rule!(Frame, rule),
             };
@@ -1470,6 +1470,16 @@ impl<A: ForIRI> FromPair<A> for MiscClause<A> {
             }
             Rule::MiscDifferentIndividualsClause => {
                 entity_list!(inner, ctx, DifferentIndividuals)
+            }
+            Rule::MiscRuleClause => {
+                if ctx.strict {
+                    Err(Error::custom(
+                        "SWRL rules are not supported by horned-owl",
+                        inner.as_span(),
+                    ))
+                } else {
+                    Ok(MiscClause::empty())
+                }
             }
             rule => unexpected_rule!(MiscClause, rule),
         }

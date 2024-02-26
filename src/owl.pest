@@ -385,6 +385,7 @@ MiscEquivalentDataPropertiesClause   = { "EquivalentProperties:" ~ Annotations? 
 MiscDisjointDataPropertiesClause     = { "DisjointProperties:" ~ Annotations? ~ DataPropertyExpression2List }
 MiscSameIndividualClause             = { "SameIndividual:" ~ Annotations? ~ Individual2List }
 MiscDifferentIndividualsClause       = { "DifferentIndividuals:" ~ Annotations? ~ Individual2List }
+MiscRuleClause                       = { "Rule:" ~ SWRLRule }
 MiscClause = {
     MiscEquivalentClassesClause
     | MiscDisjointClassesClause
@@ -394,4 +395,32 @@ MiscClause = {
     | MiscDisjointDataPropertiesClause
     | MiscSameIndividualClause
     | MiscDifferentIndividualsClause
+    | MiscRuleClause
 }
+
+
+// Annex: SWRL Rules
+
+SWRLRule = { SWRLAntecedentList ~ "->" ~ SWRLConsequentList }
+
+SWRLAntecedentList = { SWRLAntecedent? ~ (COMMA ~ SWRLAntecedent)* }
+SWRLConsequentList = { SWRLConsequent? ~ (COMMA ~ SWRLConsequent)* }
+
+SWRLAntecedent = { SWRLAtom }
+SWRLConsequent = { SWRLAtom }
+
+SWRLAtom = {
+    Description ~ LBRACKET ~ SWRLIObject ~ RBRACKET 
+    | DataRange ~ LBRACKET ~ SWRLDObject ~ RBRACKET
+    | ObjectPropertyIRI ~ LBRACKET ~ SWRLIObject ~ COMMA ~ SWRLDObject ~ RBRACKET
+    | DataPropertyIRI ~ LBRACKET ~ SWRLIObject ~ COMMA ~ SWRLDObject ~ RBRACKET
+    | "sameAs" ~ LBRACKET ~ SWRLIObject ~ COMMA ~ SWRLIObject ~ RBRACKET
+    | "differentFrom" ~ LBRACKET ~ SWRLIObject ~ COMMA ~ SWRLIObject ~ RBRACKET
+    | "builtIn" ~ LBRACKET ~ SWRLBuiltinID ~ (COMMA ~ SWRLDObject)* ~ RBRACKET
+}
+
+SWRLBuiltinID = { IRI }
+SWRLIObject = { SWRLIvariable | Individual }
+SWRLDObject = { SWRLDvariable | Literal }
+SWRLIvariable = { "?" ~ IRI } 
+SWRLDvariable = { "?" ~ IRI } 

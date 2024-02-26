@@ -85,22 +85,20 @@ impl<A: ForIRI> From<Individual<A>> for IndividualFrame<A> {
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone)]
-pub struct MiscClause<A: ForIRI>(pub AnnotatedAxiom<A>);
+pub struct MiscClause<A: ForIRI>(pub Option<AnnotatedAxiom<A>>);
 
 impl<A: ForIRI> MiscClause<A> {
     pub fn new(axiom: AnnotatedAxiom<A>) -> Self {
-        MiscClause(axiom)
+        MiscClause(Some(axiom))
+    }
+
+    pub fn empty() -> Self {
+        MiscClause(None)
     }
 }
 
 impl<A: ForIRI> From<AnnotatedAxiom<A>> for MiscClause<A> {
     fn from(axiom: AnnotatedAxiom<A>) -> Self {
-        MiscClause(axiom)
-    }
-}
-
-impl<A: ForIRI> From<MiscClause<A>> for AnnotatedAxiom<A> {
-    fn from(clause: MiscClause<A>) -> Self {
-        clause.0
+        MiscClause::new(axiom)
     }
 }
