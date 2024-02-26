@@ -15,9 +15,9 @@ use crate::frames::AnnotationPropertyFrame;
 use crate::frames::ClassFrame;
 use crate::frames::DataPropertyFrame;
 use crate::frames::DatatypeFrame;
-use crate::frames::MiscClause;
-use crate::frames::InverseObjectPropertyFrame;
 use crate::frames::IndividualFrame;
+use crate::frames::InverseObjectPropertyFrame;
+use crate::frames::MiscClause;
 use crate::frames::ObjectPropertyFrame;
 use crate::parser::Rule;
 use crate::Context;
@@ -355,11 +355,11 @@ fn from_primary_pair<A: ForIRI>(
     }
 }
 
-fn from_conjuction_pair<A: ForIRI>(
+fn from_conjunction_pair<A: ForIRI>(
     pair: Pair<Rule>,
     ctx: &Context<'_, A>,
 ) -> Result<ClassExpression<A>> {
-    debug_assert!(pair.as_rule() == Rule::Conjuction);
+    debug_assert!(pair.as_rule() == Rule::Conjunction);
 
     let mut inner = pair.into_inner().peekable();
     match inner.peek().unwrap().as_rule() {
@@ -398,11 +398,11 @@ impl<A: ForIRI> FromPair<A> for ClassExpression<A> {
     fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
         let mut inner = pair.into_inner();
         if inner.len() == 1 {
-            from_conjuction_pair(inner.next().unwrap(), ctx)
+            from_conjunction_pair(inner.next().unwrap(), ctx)
         } else {
             Ok(ClassExpression::ObjectUnionOf(
                 inner
-                    .map(|pair| from_conjuction_pair(pair, ctx))
+                    .map(|pair| from_conjunction_pair(pair, ctx))
                     .collect::<Result<_>>()?,
             ))
         }

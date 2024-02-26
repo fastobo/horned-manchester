@@ -214,9 +214,9 @@ mod tests {
     }
 
     #[test]
-    fn conjuction() {
+    fn conjunction() {
         assert_parse!(
-            Rule::Conjuction,
+            Rule::Conjunction,
             r#"owl:Thing that hasFirstName exactly 1 and hasFirstName only string[minLength 1]"#
         );
     }

@@ -226,8 +226,8 @@ RestrictionValue = { Literal }
 
 // 2.4 Descriptions
 
-Description = { Conjuction ~ (KEYWORD_OR ~ Conjuction)* }
-Conjuction = { 
+Description = { Conjunction ~ (KEYWORD_OR ~ Conjunction)* }
+Conjunction = { 
         (ClassIRI ~ "that" ~ KEYWORD_NOT? ~ Restriction ~ ( KEYWORD_AND ~ KEYWORD_NOT? ~ Restriction )*)
     |   (Primary ~ (KEYWORD_AND ~ Primary)*)
 }
