@@ -1,5 +1,6 @@
-use super::parser::Rule;
 use pest::Span;
+
+use super::parser::Rule;
 
 /// The result type for this crate.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -73,7 +74,7 @@ pub enum Error {
 }
 
 impl Error {
-    // Create a custom `pest` error spanning the given pair.
+    /// Create a custom `pest` error located at the given span.
     pub fn custom<S: Into<String>>(message: S, span: Span) -> Self {
         Self::from(pest::error::Error::new_from_span(
             pest::error::ErrorVariant::CustomError {

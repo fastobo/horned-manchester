@@ -578,8 +578,9 @@ impl<A: ForIRI> FromPair<A> for Individual<A> {
 
 impl<A: ForIRI> FromPair<A> for AnonymousIndividual<A> {
     const RULE: Rule = Rule::NodeID;
-    fn from_pair_unchecked(pair: Pair<Rule>, _ctx: &Context<'_, A>) -> Result<Self> {
-        Ok(AnonymousIndividual(pair.as_str().to_string().into()))
+    fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
+        let iri = ctx.iri(pair.as_str());
+        Ok(AnonymousIndividual(iri.underlying()))
     }
 }
 
@@ -1532,6 +1533,7 @@ impl<A: ForIRI> FromPair<A> for MiscClause<A> {
             }
             Rule::MiscRuleClause => {
                 if ctx.strict {
+                    // FIXME: SWRL rules are not supported for now
                     Err(Error::custom(
                         "SWRL rules are not supported by horned-owl",
                         inner.as_span(),
