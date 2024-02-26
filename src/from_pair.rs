@@ -1293,9 +1293,75 @@ impl<A: ForIRI> FromPair<A> for IndividualFrame<A> {
                         }
                     )
                 }
-                Rule::IndividualFactsClause => unimplemented!(),
-                Rule::IndividualSameAsClause => unimplemented!(),
-                Rule::IndividualDifferentFromClause => unimplemented!(),
+                Rule::IndividualSameAsClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let i1 = frame.entity.clone();
+                            let i2 = Individual::from_pair(pair, ctx)?;
+                            SameIndividual(vec![i1, i2]).into()
+                        }
+                    )
+                }
+                Rule::IndividualDifferentFromClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let i1 = frame.entity.clone();
+                            let i2 = Individual::from_pair(pair, ctx)?;
+                            DifferentIndividuals(vec![i1, i2]).into()
+                        }
+                    )
+                }
+                Rule::IndividualFactsClause => {
+                    annotated_axiom!(
+                        pair,
+                        inner,
+                        ctx,
+                        frame,
+                        axiom = {
+                            let mut fact = descend(pair);
+                            let negative = if fact.as_rule() == Rule::InverseFact {
+                                fact = descend(fact);
+                                true
+                            } else {
+                                false
+                            };
+
+                            let from = frame.entity.clone();
+                            match fact.as_rule() {
+                                Rule::ObjectPropertyFact => {
+                                    let mut pairs = fact.into_inner();
+                                    let op = FromPair::from_pair(pairs.next().unwrap(), ctx)?;
+                                    let to = FromPair::from_pair(pairs.next().unwrap(), ctx)?;
+                                    let ope = ObjectPropertyExpression::ObjectProperty(op);
+                                    if negative {
+                                        NegativeObjectPropertyAssertion { ope, from, to }.into()
+                                    } else {
+                                        ObjectPropertyAssertion { ope, from, to }.into()
+                                    }
+                                }
+                                Rule::DataPropertyFact => {
+                                    let mut pairs = fact.into_inner();
+                                    let dp = FromPair::from_pair(pairs.next().unwrap(), ctx)?;
+                                    let to = FromPair::from_pair(pairs.next().unwrap(), ctx)?;
+                                    if negative {
+                                        NegativeDataPropertyAssertion { dp, from, to }.into()
+                                    } else {
+                                        DataPropertyAssertion { dp, from, to }.into()
+                                    }
+                                }
+                                rule => unexpected_rule!(AnnotationPropertyFrame, rule),
+                            }
+                        }
+                    )
+                }
                 rule => unexpected_rule!(AnnotationPropertyFrame, rule),
             }
         }

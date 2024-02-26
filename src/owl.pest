@@ -350,7 +350,8 @@ IndividualClause = {
     | IndividualDifferentFromClause
 }
 
-Fact = { KEYWORD_NOT? ~ (ObjectPropertyFact | DataPropertyFact) }
+Fact = { InverseFact | ObjectPropertyFact | DataPropertyFact }
+InverseFact = { KEYWORD_NOT ~ (ObjectPropertyFact | DataPropertyFact) }
 ObjectPropertyFact = { ObjectPropertyIRI ~ Individual }
 DataPropertyFact = { DataPropertyIRI ~ Literal }
 
