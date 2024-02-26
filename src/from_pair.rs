@@ -121,6 +121,7 @@ macro_rules! impl_vector {
 
 impl_vector!(A, Vec<Literal<A>>, Rule::LiteralList);
 impl_vector!(A, Vec<Individual<A>>, Rule::IndividualList);
+impl_vector!(A, Vec<FacetRestriction<A>>, Rule::FacetRestrictionList);
 
 // --- Annotation ------------------------------------------------------------
 
@@ -453,10 +454,15 @@ fn from_data_atomic_pair<A: ForIRI>(
     let inner = descend(pair);
     match inner.as_rule() {
         Rule::DataRange => from_data_range_pair(inner, ctx),
-        Rule::DatatypeRestriction => from_datatype_restriction_pair(inner, ctx),
+        Rule::DatatypeRestriction => {
+            let mut pairs = inner.into_inner();
+            let dt = FromPair::from_pair(pairs.next().unwrap(), ctx)?;
+            let restrictions = FromPair::from_pair(pairs.next().unwrap(), ctx)?;
+            Ok(DataRange::DatatypeRestriction(dt, restrictions))
+        }
         Rule::Datatype => {
-            let datatype = Datatype::from_pair(inner, ctx)?;
-            Ok(DataRange::Datatype(datatype))
+            let dt = FromPair::from_pair(inner, ctx)?;
+            Ok(DataRange::Datatype(dt))
         }
         Rule::LiteralList => {
             let literals = FromPair::from_pair(descend(inner), ctx)?;
@@ -464,15 +470,6 @@ fn from_data_atomic_pair<A: ForIRI>(
         }
         rule => unexpected_rule!(DataRange, rule),
     }
-}
-
-fn from_datatype_restriction_pair<A: ForIRI>(
-    pair: Pair<Rule>,
-    ctx: &Context<'_, A>,
-) -> Result<DataRange<A>> {
-    debug_assert!(pair.as_rule() == Rule::DatatypeRestriction);
-
-    unimplemented!()
 }
 
 impl<A: ForIRI> FromPair<A> for DataRange<A> {
@@ -489,6 +486,36 @@ impl<A: ForIRI> FromPair<A> for DataRange<A> {
             }
             rule => unexpected_rule!(DataRange, rule),
         }
+    }
+}
+
+impl<A: ForIRI> FromPair<A> for Facet {
+    const RULE: Rule = Rule::FacetRestriction;
+    fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
+        let inner = descend(pair);
+        let facet = match inner.as_rule() {
+            Rule::FacetLength => Facet::Length,
+            Rule::FacetMinLength => Facet::MinLength,
+            Rule::FacetMaxLength => Facet::MaxLength,
+            Rule::FacetPattern => Facet::Pattern,
+            Rule::FacetLangRange => Facet::LangRange,
+            Rule::FacetMinInclusive => Facet::MinInclusive,
+            Rule::FacetMinExclusive => Facet::MinExclusive,
+            Rule::FacetMaxInclusive => Facet::MaxInclusive,
+            Rule::FacetMaxExclusive => Facet::MaxExclusive,
+            rule => unexpected_rule!(Facet, rule),
+        };
+        Ok(facet)
+    }
+}
+
+impl<A: ForIRI> FromPair<A> for FacetRestriction<A> {
+    const RULE: Rule = Rule::FacetRestriction;
+    fn from_pair_unchecked(pair: Pair<Rule>, ctx: &Context<'_, A>) -> Result<Self> {
+        let mut inner = pair.into_inner();
+        let f = FromPair::from_pair(inner.next().unwrap(), ctx)?;
+        let l = FromPair::from_pair(descend(inner.next().unwrap()), ctx)?;
+        Ok(FacetRestriction { f, l })
     }
 }
 
@@ -564,7 +591,6 @@ impl<A: ForIRI> FromPair<A> for Literal<A> {
         macro_rules! xsd_literal {
             ($pair:ident, $ctx:ident, xsd: $datatype:expr) => {{
                 let literal = $pair.as_str().to_string();
-                let curie = Curie::new(Some("xsd"), stringify!($datatype));
                 let datatype_iri = $ctx
                     .prefixes
                     .as_ref()
@@ -610,15 +636,13 @@ impl<A: ForIRI> FromPair<A> for Literal<A> {
             Rule::IntegerLiteral => xsd_literal!(pair, ctx, xsd:integer),
             Rule::DecimalLiteral => xsd_literal!(pair, ctx, xsd:decimal),
             Rule::FloatingPointLiteral => xsd_literal!(pair, ctx, xsd:float),
-            Rule::BooleanLiteral => {
-                if ctx.strict {
-                    return Err(Error::custom(
-                        "boolean literals are not allowed",
-                        pair.as_span(),
-                    ));
-                }
-                xsd_literal!(pair, ctx, xsd:boolean)
+            Rule::BooleanLiteral if ctx.strict => {
+                return Err(Error::custom(
+                    "boolean literals are not allowed",
+                    pair.as_span(),
+                ));
             }
+            Rule::BooleanLiteral => xsd_literal!(pair, ctx, xsd:boolean),
             rule => unexpected_rule!(Literal, rule),
         }
     }
@@ -1495,7 +1519,7 @@ impl<A: ForIRI> FromPair<A> for ObjectPropertyExpression<A> {
                 let op = match pair.as_rule() {
                     Rule::BracketedObjectPropertyIRI if ctx.strict => {
                         return Err(Error::custom(
-                            "inverse object properties should not be bracketed",
+                            "bracketed inverse object properties are not allowed",
                             span,
                         ));
                     }

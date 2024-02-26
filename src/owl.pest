@@ -76,6 +76,7 @@ KEYWORD = {
 
 LiteralList    = { Literal ~ (COMMA ~ Literal)* }
 IndividualList = { Individual ~ (COMMA ~ Individual)* }
+FacetRestrictionList = { FacetRestriction ~ (COMMA ~ FacetRestriction)* }
 
 AnnotationAnnotatedList                   = { Annotations? ~ Annotation                   ~ (COMMA ~ Annotations? ~ Annotation)* }
 DescriptionAnnotatedList                  = { Annotations? ~ Description                  ~ (COMMA ~ Annotations? ~ Description)* }
@@ -188,8 +189,29 @@ DataAtomic = {
     |   DatatypeRestriction
     |   Datatype 
 }
-DatatypeRestriction = { Datatype ~ LSQUARE ~ Facet ~ RestrictionValue ~ (COMMA ~ Facet ~ RestrictionValue)* ~ RSQUARE }
-Facet = { "length" | "minLength" | "maxLength" | "pattern" | "langPattern" | "<=" | "<" | ">=" | ">" }
+DatatypeRestriction = { Datatype ~ LSQUARE ~ FacetRestrictionList ~ RSQUARE }
+FacetRestriction = { Facet ~ RestrictionValue }
+
+FacetLength = { "lenght" }
+FacetMinLength = { "minLength" }
+FacetMaxLength = { "maxLength" }
+FacetPattern = { "pattern" }
+FacetLangRange = { "langRange" }
+FacetMinInclusive = { "<=" }
+FacetMinExclusive = { "<" }
+FacetMaxInclusive = { ">=" }
+FacetMaxExclusive = { ">" }
+Facet = {
+    FacetLength
+    | FacetMinLength
+    | FacetMaxLength
+    | FacetPattern
+    | FacetLangRange
+    | FacetMinInclusive
+    | FacetMinExclusive
+    | FacetMaxInclusive
+    | FacetMaxExclusive
+}
 RestrictionValue = { Literal }
 
 
